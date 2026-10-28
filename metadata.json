@@ -2,5 +2,7 @@
   "name": "Sistem Survei dan Evaluasi Manajemen Risiko",
   "description": "Portal survei responden dan lembar kerja evaluasi maturitas manajemen risiko dengan sistem penilaian rubrik terproteksi.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
