@@ -39,16 +39,16 @@ export default function App() {
   const [respondents, setRespondents] = useState<Respondent[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY_RESPONDENTS);
-      if (stored) {
+      if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed; // Can be empty array []
         }
       }
     } catch {
-      // Fallback to mock data if parsing fails
+      // Fallback
     }
-    // Seed initial mock data
+    // Seed initial mock data only on first visit if never set
     localStorage.setItem(STORAGE_KEY_RESPONDENTS, JSON.stringify(INITIAL_MOCK_RESPONDENTS));
     return INITIAL_MOCK_RESPONDENTS;
   });
@@ -100,13 +100,26 @@ export default function App() {
     setSelectedRespondent(updatedRespondent);
   };
 
-  // Reset to initial mock dataset
-  const handleResetToMock = () => {
-    if (window.confirm('Muat ulang 4 data simulasi awal? Respon baru yang belum disimpan mungkin terhapus.')) {
-      setRespondents(INITIAL_MOCK_RESPONDENTS);
-      localStorage.setItem(STORAGE_KEY_RESPONDENTS, JSON.stringify(INITIAL_MOCK_RESPONDENTS));
+  // Delete single respondent
+  const handleDeleteRespondent = (id: string) => {
+    setRespondents((prev) => prev.filter((item) => item.id !== id));
+    if (selectedRespondent?.id === id) {
       setSelectedRespondent(null);
     }
+  };
+
+  // Clear all respondents from database
+  const handleClearAllRespondents = () => {
+    setRespondents([]);
+    localStorage.setItem(STORAGE_KEY_RESPONDENTS, JSON.stringify([]));
+    setSelectedRespondent(null);
+  };
+
+  // Reset to initial mock dataset
+  const handleResetToMock = () => {
+    setRespondents(INITIAL_MOCK_RESPONDENTS);
+    localStorage.setItem(STORAGE_KEY_RESPONDENTS, JSON.stringify(INITIAL_MOCK_RESPONDENTS));
+    setSelectedRespondent(null);
   };
 
   return (
@@ -140,6 +153,8 @@ export default function App() {
                 respondents={respondents}
                 onSelectRespondent={(resp) => setSelectedRespondent(resp)}
                 onPrintRespondent={(resp) => setPrintTargetRespondent(resp)}
+                onDeleteRespondent={handleDeleteRespondent}
+                onClearAllRespondents={handleClearAllRespondents}
                 onResetToMock={handleResetToMock}
                 onGoToPublicForm={() => setCurrentPortal('public')}
               />
