@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Printer, Shield } from 'lucide-react';
+import { X, Printer, Shield, CheckCircle2, XCircle } from 'lucide-react';
 import { Respondent } from '../types';
 import { QUESTIONS_DATA } from '../data/questions';
 import { getMaturityCategory } from '../utils/scoring';
@@ -28,7 +28,9 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
 
   const evaluation = respondent.evaluation;
   const nilaiAkhir = evaluation ? evaluation.nilaiAkhir : 0;
-  const maturity = getMaturityCategory(nilaiAkhir);
+  const skorPemahaman = evaluation ? evaluation.skorPemahaman : 0;
+  const skorPenerapan = evaluation ? evaluation.skorPenerapan : 0;
+  const maturity = getMaturityCategory(nilaiAkhir, skorPemahaman, skorPenerapan);
 
   const handlePrint = () => {
     window.print();
@@ -42,7 +44,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
           <div className="flex items-center gap-2 min-w-0">
             <Printer className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="font-bold text-xs sm:text-sm truncate">
-              Lembar Kerja Evaluasi Resmi
+              Lembar Evaluasi & Penilaian Resmi
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -51,7 +53,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-xs whitespace-nowrap"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Cetak / PDF</span>
+              <span>Cetak / PDF Dokumen</span>
             </button>
             <button
               onClick={onClose}
@@ -79,13 +81,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   TIM EVALUASI DAN PENILAIAN MATURITAS MANAJEMEN RISIKO
                 </h3>
                 <p className="text-[9px] sm:text-[10px] text-slate-600 mt-0.5 leading-snug">
-                  Jalan H.R. Rasuna Said Kav.6-7, Kuningan, Jakarta Selatan
-                </p>
-                <p className="text-[9px] sm:text-[10px] text-slate-600 leading-snug">
-                  Telepon: 021-5252975 , Faksimile: 021-5252975
-                </p>
-                <p className="text-[9px] sm:text-[10px] text-slate-600 leading-snug">
-                  Laman: http://www.itjen.kemenkum.go.id, Pos-el: itjen@kemenkum.go.id
+                  Jalan H.R. Rasuna Said Kav.6-7, Kuningan, Jakarta Selatan · Laman: itjen.kemenkum.go.id
                 </p>
               </div>
             </div>
@@ -101,10 +97,10 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
             </p>
           </div>
 
-          {/* 1. DATA IDENTITAS RESPONDEN (Responsive grid) */}
+          {/* 1. DATA IDENTITAS RESPONDEN */}
           <div className="border border-slate-300 rounded-lg p-3 sm:p-4 bg-slate-50/50 print:bg-white text-xs">
             <div className="font-bold text-slate-900 text-[11px] sm:text-xs uppercase mb-2 border-b border-slate-200 pb-1">
-              I. Identitas Pegawai & Satuan Kerja
+              I. Identitas Pegawai Sampel & Satuan Kerja
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-y-2 gap-x-4">
               <div>
@@ -140,47 +136,70 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
             </div>
           </div>
 
-          {/* 2. REKAPITULASI SKOR & TINGKAT MATURITAS (Responsive 2x2 on mobile, 4 columns on PC/print) */}
+          {/* 2. REKAPITULASI SKOR & TINGKAT MATURITAS (Sesuai Pedoman Resmi 10 Bobot) */}
           <div className="border-2 border-slate-900 rounded-lg p-3 sm:p-4 bg-white text-xs">
             <div className="font-bold text-slate-900 uppercase mb-2 border-b border-slate-200 pb-1 text-[11px] sm:text-xs">
-              II. Rekapitulasi Skor & Hasil Penilaian Maturitas
+              II. Rekapitulasi Skor Penilaian Berdasarkan Pedoman Resmi
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 print:grid-cols-4 gap-3 sm:gap-4 text-center divide-y sm:divide-y-0 sm:divide-x print:divide-x divide-slate-200">
               <div className="pt-1 sm:pt-0">
-                <div className="text-[10px] sm:text-[11px] text-slate-500">Skor Pemahaman (A)</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500">Skor Pemahaman (A: Soal 1-5)</div>
                 <div className="text-sm sm:text-base font-bold font-mono text-slate-900 mt-0.5">
-                  {evaluation?.skorPemahaman || 0} / 20
+                  {evaluation?.skorPemahaman || 0} / 50
+                </div>
+                <div className="text-[10px] mt-1 font-bold">
+                  {evaluation && evaluation.skorPemahaman >= 30 ? (
+                    <span className="text-emerald-700">✓ Cukup Memahami (≥30)</span>
+                  ) : (
+                    <span className="text-rose-700">✕ Kurang Memahami (&lt;30)</span>
+                  )}
                 </div>
               </div>
+
               <div className="pt-1 sm:pt-0">
-                <div className="text-[10px] sm:text-[11px] text-slate-500">Skor Penerapan (B)</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500">Skor Penerapan (B: Soal 6-7)</div>
                 <div className="text-sm sm:text-base font-bold font-mono text-slate-900 mt-0.5">
-                  {evaluation?.skorPenerapan || 0} / 8
+                  {evaluation?.skorPenerapan || 0} / 20
+                </div>
+                <div className="text-[10px] mt-1 font-bold">
+                  {evaluation && evaluation.skorPenerapan >= 12 ? (
+                    <span className="text-emerald-700">✓ Mengetahui Penerapan (≥12)</span>
+                  ) : (
+                    <span className="text-rose-700">✕ Belum Mengetahui (&lt;12)</span>
+                  )}
                 </div>
               </div>
+
               <div className="pt-2 sm:pt-0">
-                <div className="text-[10px] sm:text-[11px] text-slate-500">Total Skor Rubrik</div>
+                <div className="text-[10px] sm:text-[11px] text-slate-500">Total Akumulasi Skor</div>
                 <div className="text-sm sm:text-base font-bold font-mono text-slate-900 mt-0.5">
-                  {evaluation?.totalSkor || 0} / 28
+                  {evaluation?.totalSkor || 0} / 70
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1">
+                  7 Butir Soal × Bobot 10
                 </div>
               </div>
+
               <div className="pt-2 sm:pt-0">
                 <div className="text-[10px] sm:text-[11px] text-slate-500">Nilai Akhir Indeks</div>
                 <div className="text-base sm:text-xl font-black font-mono text-slate-900 mt-0.5">
                   {nilaiAkhir.toFixed(2)}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1">
+                  (Total / 70) × 100
                 </div>
               </div>
             </div>
 
             <div className="mt-3 pt-2.5 border-t border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="text-xs">
-                <span className="font-bold text-slate-700">Kategori Tingkat Maturitas: </span>
-                <span className="px-2 py-0.5 rounded font-bold text-xs bg-slate-900 text-white inline-block mt-1 sm:mt-0">
+                <span className="font-bold text-slate-700">Tingkat Maturitas Pegawai: </span>
+                <span className="px-2.5 py-0.5 rounded font-bold text-xs bg-slate-900 text-white inline-block mt-1 sm:mt-0">
                   {maturity.badgeText}
                 </span>
               </div>
               <div className="text-[10px] sm:text-[11px] text-slate-500">
-                Formula: (Total Skor Diperoleh / 28) × 100
+                Skor 1 - 3 via Pemahaman (≥30) · Skor 4 - 5 via Penerapan (≥12)
               </div>
             </div>
 
@@ -189,13 +208,10 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
             </div>
           </div>
 
-          {/* 3. TABEL RINCIAN NILAI BUTIR SOAL 1-7 (Responsive horizontal scroll container on screen + pristine A4 print table) */}
+          {/* 3. TABEL RINCIAN NILAI BUTIR SOAL 1-7 */}
           <div className="space-y-2">
             <div className="font-bold text-slate-900 text-[11px] sm:text-xs uppercase border-b border-slate-200 pb-1 flex items-center justify-between">
-              <span>III. Rincian Penilaian Jawaban Responden (7 Butir Soal)</span>
-              <span className="no-print text-[10px] text-slate-400 font-normal sm:hidden">
-                (Geser ke samping jika tabel terpotong di HP)
-              </span>
+              <span>III. Rincian Penilaian Jawaban Responden (Skala 1 - 10, Bobot 10)</span>
             </div>
 
             <div className="overflow-x-auto -mx-2 sm:mx-0 border border-slate-300 rounded-lg print:border-none print:overflow-visible">
@@ -204,8 +220,8 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   <tr className="bg-slate-100 border-b border-slate-300 text-[10px] uppercase font-bold text-slate-700">
                     <th className="p-2 border-r border-slate-300 w-8 text-center print:w-[6%]">No</th>
                     <th className="p-2 border-r border-slate-300 w-64 sm:w-80 print:w-[46%]">Pertanyaan & Jawaban Responden</th>
-                    <th className="p-2 border-r border-slate-300 w-16 text-center print:w-[12%]">Skor (1-4)</th>
-                    <th className="p-2 print:w-[36%]">Catatan Evaluator & Analisis Rubrik</th>
+                    <th className="p-2 border-r border-slate-300 w-20 text-center print:w-[14%]">Skor (1-10)</th>
+                    <th className="p-2 print:w-[34%]">Catatan Evaluator & Analisis Kisi-Kisi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -227,16 +243,21 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                             &quot;{userAnswer}&quot;
                           </div>
                         </td>
-                        <td className="p-2 border-r border-slate-300 text-center font-mono font-bold text-sm text-slate-900">
-                          {score > 0 ? score : '-'}
+                        <td className="p-2 border-r border-slate-300 text-center">
+                          <div className="font-mono font-bold text-base text-slate-900">
+                            {score > 0 ? score : '-'} <span className="text-[10px] font-normal text-slate-400">/ 10</span>
+                          </div>
+                          <div className="text-[9px] text-slate-500 font-medium mt-0.5">
+                            {score >= 9 ? 'Sangat Lengkap' : score >= 7 ? 'Cukup / Baik' : score >= 4 ? 'Kurang' : 'Sangat Kurang'}
+                          </div>
                         </td>
                         <td className="p-2 text-[10px] sm:text-[11px] text-slate-700 break-words">
-                          <div className="font-medium text-slate-900 leading-snug">
-                            {score > 0 ? q.rubrik[score as 1 | 2 | 3 | 4] : 'Belum dinilai'}
+                          <div className="text-slate-600 line-clamp-3 leading-snug">
+                            {q.kisiKisi.split('\n')[0]}
                           </div>
                           {itemNote && (
-                            <div className="mt-1 text-slate-600 bg-amber-50/60 p-1.5 rounded border border-amber-200/60 leading-snug">
-                              <strong>Catatan:</strong> {itemNote}
+                            <div className="mt-1 text-slate-700 bg-amber-50/60 p-1.5 rounded border border-amber-200/60 leading-snug">
+                              <strong>Catatan Khusus:</strong> {itemNote}
                             </div>
                           )}
                         </td>
@@ -248,65 +269,44 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
             </div>
           </div>
 
-          {/* 4. CATATAN & REKOMENDASI UMUM */}
-          <div className="border border-slate-300 rounded-lg p-3 sm:p-4 bg-white text-xs print-break-inside-avoid">
-            <div className="font-bold text-slate-900 uppercase mb-1.5 text-[11px] sm:text-xs">
-              IV. Catatan / Rekomendasi Umum Tim Evaluator
-            </div>
-            <p className="text-slate-800 leading-relaxed whitespace-pre-line text-[11px] sm:text-xs break-words">
-              {evaluation?.catatanUmum ||
-                'Responden telah menyelesaikan seluruh instrumen survei manajemen risiko. Rekomendasi tindak lanjut agar dikoordinasikan bersama koordinator UPR Satuan Kerja untuk penguatan implementasi register risiko.'}
-            </p>
-          </div>
-
-          {/* 5. TANDA TANGAN LEGALITAS (Responsive 2-column or stacked on very small mobile) */}
-          <div className="pt-4 grid grid-cols-2 gap-4 sm:gap-8 text-xs text-center print-break-inside-avoid">
+          {/* 4. CATATAN UMUM DAN TANDA TANGAN */}
+          <div className="border border-slate-300 rounded-lg p-3 sm:p-4 bg-white text-xs space-y-4 print-break-inside-avoid">
             <div>
-              <p className="text-slate-600 text-[10px] sm:text-xs">Mengetahui Responden,</p>
-              <div className="h-12 sm:h-16"></div>
-              <p className="font-bold text-slate-900 underline text-[11px] sm:text-xs break-words">{respondent.nama}</p>
-              <p className="text-slate-600 font-mono text-[9px] sm:text-[11px] break-all">NIP. {respondent.nip}</p>
-            </div>
-
-            <div>
-              <p className="text-slate-600 text-[10px] sm:text-xs">
-                Jakarta, {evaluation?.tanggalEvaluasi ? evaluation.tanggalEvaluasi.slice(0, 10) : new Date().toLocaleDateString('id-ID')}
-              </p>
-              <p className="text-slate-600 font-medium text-[10px] sm:text-xs">Tim Penilai / Evaluator,</p>
-              <div className="h-10 sm:h-14 flex items-center justify-center">
-                <span className="text-[8px] sm:text-[10px] text-slate-500 font-mono tracking-wider border border-dashed border-slate-300 px-2 py-0.5 rounded">
-                  [Terverifikasi Digital]
-                </span>
+              <div className="font-bold text-slate-900 uppercase mb-1 text-[11px] sm:text-xs">
+                IV. Catatan Rekomendasi Evaluator
               </div>
-              <p className="font-bold text-slate-900 underline text-[11px] sm:text-xs break-words">
-                {evaluation?.evaluatorName || 'Drs. H. Hendra Wijaya, M.Si.'}
-              </p>
-              <p className="text-slate-600 font-mono text-[9px] sm:text-[11px] break-all">
-                NIP. {evaluation?.evaluatorNip || '197508121998031001'}
+              <p className="text-[11px] sm:text-xs text-slate-700 italic bg-slate-50 p-2.5 rounded border border-slate-200 min-h-[48px] leading-relaxed">
+                {evaluation?.catatanUmum || 'Tidak ada catatan umum tambahan.'}
               </p>
             </div>
-          </div>
-        </div>
 
-        {/* Modal Footer Controls (Hidden in Print) */}
-        <div className="no-print px-4 sm:px-6 py-3 bg-slate-100 rounded-b-xl border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0">
-          <div className="text-[11px] text-slate-500 text-center sm:text-left">
-            Siap dicetak ke printer fisik atau disimpan sebagai PDF (Ctrl+P / Cmd+P).
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <button
-              onClick={onClose}
-              className="flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer text-center"
-            >
-              Tutup
-            </button>
-            <button
-              onClick={handlePrint}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 sm:px-5 py-1.5 sm:py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shadow-xs whitespace-nowrap"
-            >
-              <Printer className="w-3.5 h-3.5 text-amber-400" />
-              <span>Cetak / Ekspor PDF</span>
-            </button>
+            <div className="pt-2 border-t border-slate-200 grid grid-cols-2 gap-4 text-center">
+              <div>
+                <p className="text-[10px] sm:text-xs text-slate-500">Responden Pegawai yang Dinilai,</p>
+                <div className="h-14 sm:h-16 flex items-end justify-center">
+                  <span className="font-bold text-slate-900 text-xs sm:text-sm underline">
+                    {respondent.nama}
+                  </span>
+                </div>
+                <p className="text-[9px] sm:text-[10px] font-mono text-slate-600">NIP. {respondent.nip}</p>
+              </div>
+
+              <div>
+                <p className="text-[10px] sm:text-xs text-slate-500">
+                  Jakarta, {evaluation?.tanggalEvaluasi ? evaluation.tanggalEvaluasi.split(',')[0] : new Date().toLocaleDateString('id-ID', { dateStyle: 'long' })}
+                  <br />
+                  Pejabat / Tim Penilai Manajemen Risiko,
+                </p>
+                <div className="h-14 sm:h-16 flex items-end justify-center">
+                  <span className="font-bold text-slate-900 text-xs sm:text-sm underline">
+                    {evaluation?.evaluatorName || 'Drs. H. Hendra Wijaya, M.Si.'}
+                  </span>
+                </div>
+                <p className="text-[9px] sm:text-[10px] font-mono text-slate-600">
+                  NIP. {evaluation?.evaluatorNip || '197508121998031001'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

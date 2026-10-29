@@ -25,31 +25,33 @@ export function exportRespondentsToCsv(respondents: Respondent[]) {
     'Status UPR',
     'Keterangan / Peran UPR',
     'Soal 1 - Jawaban',
-    'Soal 1 - Nilai (1-4)',
+    'Soal 1 - Nilai (1-10)',
     'Soal 1 - Catatan',
     'Soal 2 - Jawaban',
-    'Soal 2 - Nilai (1-4)',
+    'Soal 2 - Nilai (1-10)',
     'Soal 2 - Catatan',
     'Soal 3 - Jawaban',
-    'Soal 3 - Nilai (1-4)',
+    'Soal 3 - Nilai (1-10)',
     'Soal 3 - Catatan',
     'Soal 4 - Jawaban',
-    'Soal 4 - Nilai (1-4)',
+    'Soal 4 - Nilai (1-10)',
     'Soal 4 - Catatan',
     'Soal 5 - Jawaban',
-    'Soal 5 - Nilai (1-4)',
+    'Soal 5 - Nilai (1-10)',
     'Soal 5 - Catatan',
     'Soal 6 - Jawaban',
-    'Soal 6 - Nilai (1-4)',
+    'Soal 6 - Nilai (1-10)',
     'Soal 6 - Catatan',
     'Soal 7 - Jawaban',
-    'Soal 7 - Nilai (1-4)',
+    'Soal 7 - Nilai (1-10)',
     'Soal 7 - Catatan',
-    'Skor Pemahaman (Maks 20)',
-    'Skor Penerapan (Maks 8)',
-    'Total Skor (Maks 28)',
+    'Skor Pemahaman (Maks 50)',
+    'Status Pemahaman (Ambang >=30)',
+    'Skor Penerapan (Maks 20)',
+    'Status Penerapan (Ambang >=12)',
+    'Total Skor (Maks 70)',
     'Nilai Akhir Indeks (0-100)',
-    'Tingkat Maturitas',
+    'Tingkat Maturitas (Skor 1-5)',
     'Status Penilaian',
     'Catatan Umum Evaluator',
     'Nama Evaluator',
@@ -58,62 +60,57 @@ export function exportRespondentsToCsv(respondents: Respondent[]) {
   ];
 
   const rows = respondents.map((r, index) => {
-    const evalData = r.evaluation;
-    const finalScore = evalData ? evalData.nilaiAkhir : 0;
-    const maturity = evalData ? getMaturityCategory(finalScore).badgeText : '-';
+    const ev = r.evaluation;
+    const finalScore = ev ? ev.nilaiAkhir : 0;
+    const maturity = ev ? getMaturityCategory(finalScore, ev.skorPemahaman, ev.skorPenerapan).badgeText : '-';
 
     return [
       index + 1,
       r.id,
       r.timestamp,
       r.nama,
-      `'${r.nip}`, // Prefix with quote so Excel treats NIP as text without scientific notation
+      `'${r.nip}`,
       r.jabatan,
       r.satker,
-      r.statusUpr === 'IYA' ? 'Unit Pemilik Risiko (UPR)' : 'Bukan UPR',
+      r.statusUpr === 'IYA' ? 'UPR' : 'Non-UPR',
       r.keteranganUpr,
       r.answers[1] || '',
-      evalData?.scores[1] ?? '',
-      evalData?.itemNotes?.[1] || '',
+      ev?.scores[1] ?? '',
+      ev?.itemNotes?.[1] ?? '',
       r.answers[2] || '',
-      evalData?.scores[2] ?? '',
-      evalData?.itemNotes?.[2] || '',
+      ev?.scores[2] ?? '',
+      ev?.itemNotes?.[2] ?? '',
       r.answers[3] || '',
-      evalData?.scores[3] ?? '',
-      evalData?.itemNotes?.[3] || '',
+      ev?.scores[3] ?? '',
+      ev?.itemNotes?.[3] ?? '',
       r.answers[4] || '',
-      evalData?.scores[4] ?? '',
-      evalData?.itemNotes?.[4] || '',
+      ev?.scores[4] ?? '',
+      ev?.itemNotes?.[4] ?? '',
       r.answers[5] || '',
-      evalData?.scores[5] ?? '',
-      evalData?.itemNotes?.[5] || '',
+      ev?.scores[5] ?? '',
+      ev?.itemNotes?.[5] ?? '',
       r.answers[6] || '',
-      evalData?.scores[6] ?? '',
-      evalData?.itemNotes?.[6] || '',
+      ev?.scores[6] ?? '',
+      ev?.itemNotes?.[6] ?? '',
       r.answers[7] || '',
-      evalData?.scores[7] ?? '',
-      evalData?.itemNotes?.[7] || '',
-      evalData?.skorPemahaman ?? '',
-      evalData?.skorPenerapan ?? '',
-      evalData?.totalSkor ?? '',
-      evalData ? evalData.nilaiAkhir.toFixed(2) : '',
+      ev?.scores[7] ?? '',
+      ev?.itemNotes?.[7] ?? '',
+      ev ? ev.skorPemahaman : '',
+      ev ? ev.statusPemahaman : '',
+      ev ? ev.skorPenerapan : '',
+      ev ? ev.statusPenerapan : '',
+      ev ? ev.totalSkor : '',
+      ev ? ev.nilaiAkhir.toFixed(2) : '',
       maturity,
       r.status,
-      evalData?.catatanUmum || '',
-      evalData?.evaluatorName || '',
-      evalData?.evaluatorNip ? `'${evalData.evaluatorNip}` : '',
-      evalData?.tanggalEvaluasi || ''
-    ];
+      ev?.catatanUmum || '',
+      ev?.evaluatorName || '',
+      ev?.evaluatorNip ? `'${ev.evaluatorNip}` : '',
+      ev?.tanggalEvaluasi || ''
+    ].map(escapeCsv).join(',');
   });
 
-  // Construct CSV content with BOM for Microsoft Excel auto UTF-8 detection
-  const csvContent =
-    '\uFEFF' +
-    [
-      headers.map(escapeCsv).join(','),
-      ...rows.map((row) => row.map(escapeCsv).join(','))
-    ].join('\r\n');
-
+  const csvContent = '\uFEFF' + [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -142,24 +139,26 @@ export function exportRespondentsToExcel(respondents: Respondent[]) {
     'Status UPR',
     'Keterangan Peran UPR',
     'Soal 1: Definisi Risiko',
-    'Nilai 1',
+    'Nilai 1 (1-10)',
     'Soal 2: Dasar Hukum',
-    'Nilai 2',
+    'Nilai 2 (1-10)',
     'Soal 3: Pelatihan MR',
-    'Nilai 3',
+    'Nilai 3 (1-10)',
     'Soal 4: Tahapan MR',
-    'Nilai 4',
+    'Nilai 4 (1-10)',
     'Soal 5: Contoh Risiko & RTP',
-    'Nilai 5',
+    'Nilai 5 (1-10)',
     'Soal 6: Proses Identifikasi & Mitigasi',
-    'Nilai 6',
+    'Nilai 6 (1-10)',
     'Soal 7: Bukti Dokumen Pengambilan Keputusan',
-    'Nilai 7',
-    'Skor Pemahaman (A)',
-    'Skor Penerapan (B)',
-    'Total Skor',
+    'Nilai 7 (1-10)',
+    'Skor Pemahaman (A: Max 50)',
+    'Status Pemahaman (Ambang >= 30)',
+    'Skor Penerapan (B: Max 20)',
+    'Status Penerapan (Ambang >= 12)',
+    'Total Skor (Max 70)',
     'Nilai Akhir Indeks (0-100)',
-    'Kategori Tingkat Maturitas',
+    'Tingkat Maturitas (Skor 1-5)',
     'Status Penilaian',
     'Catatan / Rekomendasi Evaluator',
     'Nama Evaluator',
@@ -192,11 +191,13 @@ export function exportRespondentsToExcel(respondents: Respondent[]) {
         .text-right { text-align: right; }
         .num { mso-number-format:"\\@"; }
         .score { font-weight: bold; text-align: center; background-color: #f8fafc; }
+        .cukup { color: #047857; font-weight: bold; }
+        .kurang { color: #b91c1c; font-weight: bold; }
       </style>
     </head>
     <body>
-      <h2>REKAPITULASI EVALUASI & PENILAIAN MANAJEMEN RISIKO KEMENTERIAN HUKUM</h2>
-      <p>Tanggal Ekspor: ${new Date().toLocaleString('id-ID')}</p>
+      <h2>REKAPITULASI EVALUASI & PENILAIAN MATURITAS MANAJEMEN RISIKO</h2>
+      <p>Kementerian Hukum Republik Indonesia · Tanggal Ekspor: ${new Date().toLocaleString('id-ID')}</p>
       <table>
         <thead>
           <tr>
@@ -209,7 +210,7 @@ export function exportRespondentsToExcel(respondents: Respondent[]) {
   respondents.forEach((r, idx) => {
     const ev = r.evaluation;
     const finalScore = ev ? ev.nilaiAkhir : 0;
-    const maturity = ev ? getMaturityCategory(finalScore).badgeText : '-';
+    const maturity = ev ? getMaturityCategory(finalScore, ev.skorPemahaman, ev.skorPenerapan).badgeText : '-';
 
     tableHtml += `
       <tr>
@@ -236,9 +237,11 @@ export function exportRespondentsToExcel(respondents: Respondent[]) {
         <td class="score">${ev?.scores[6] ?? '-'}</td>
         <td>${r.answers[7] || ''}</td>
         <td class="score">${ev?.scores[7] ?? '-'}</td>
-        <td class="text-center">${ev?.skorPemahaman ?? '-'} / 20</td>
-        <td class="text-center">${ev?.skorPenerapan ?? '-'} / 8</td>
-        <td class="score">${ev?.totalSkor ?? '-'} / 28</td>
+        <td class="text-center score">${ev?.skorPemahaman ?? '-'} / 50</td>
+        <td class="${ev?.isPemahamanCukup ? 'cukup' : 'kurang'}">${ev?.statusPemahaman ?? '-'}</td>
+        <td class="text-center score">${ev?.skorPenerapan ?? '-'} / 20</td>
+        <td class="${ev?.isPenerapanMengetahui ? 'cukup' : 'kurang'}">${ev?.statusPenerapan ?? '-'}</td>
+        <td class="score">${ev?.totalSkor ?? '-'} / 70</td>
         <td class="score">${ev ? ev.nilaiAkhir.toFixed(2) : '-'}</td>
         <td><b>${maturity}</b></td>
         <td>${r.status}</td>

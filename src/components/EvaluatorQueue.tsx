@@ -15,9 +15,13 @@ import {
   Building2,
   Check,
   KeyRound,
+  Award,
+  CheckCircle2,
+  XCircle,
+  BarChart3
 } from 'lucide-react';
 import { Respondent, StatusPenilaian } from '../types';
-import { getMaturityCategory } from '../utils/scoring';
+import { getMaturityCategory, calculateSatkerMaturity } from '../utils/scoring';
 import { exportRespondentsToExcel, exportRespondentsToCsv } from '../utils/excelExport';
 import { DAFTAR_SATKER } from '../data/satkerList';
 
@@ -87,17 +91,22 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
     });
   }, [respondents, searchTerm, statusFilter, satkerFilter]);
 
-  // Statistics calculation
-  const totalCount = respondents.length;
-  const pendingCount = respondents.filter((r) => r.status === 'Belum Dinilai').length;
-  const gradedCount = respondents.filter((r) => r.status === 'Sudah Dinilai').length;
+  // Aggregate Satker calculation based on official guidelines
+  const satkerMaturity = useMemo(() => {
+    return calculateSatkerMaturity(filtered);
+  }, [filtered]);
+
+  // General statistics
+  const totalCount = filtered.length;
+  const pendingCount = filtered.filter((r) => r.status === 'Belum Dinilai').length;
+  const gradedCount = filtered.filter((r) => r.status === 'Sudah Dinilai').length;
 
   const averageScore = useMemo(() => {
-    const graded = respondents.filter((r) => r.status === 'Sudah Dinilai' && r.evaluation);
+    const graded = filtered.filter((r) => r.status === 'Sudah Dinilai' && r.evaluation);
     if (graded.length === 0) return 0;
     const sum = graded.reduce((acc, curr) => acc + (curr.evaluation?.nilaiAkhir || 0), 0);
     return Math.round((sum / graded.length) * 100) / 100;
-  }, [respondents]);
+  }, [filtered]);
 
   const handleExecuteConfirm = () => {
     if (confirmModal.type === 'delete_single' && confirmModal.targetId) {
@@ -139,7 +148,7 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
           </div>
           <button
             onClick={() => setToastMessage(null)}
-            className="text-emerald-700 hover:text-emerald-900 p-1"
+            className="text-emerald-700 hover:text-emerald-900 p-1 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -150,13 +159,13 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
         <div>
           <div className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">
-            Portal Penilai Terakreditasi
+            Portal Penilai Terakreditasi · Sistem Manajemen Risiko
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Daftar Antrean Responden & Hasil Evaluasi
+            Daftar Antrean Responden & Evaluasi Pegawai
           </h1>
           <p className="mt-1 text-xs text-slate-500">
-            Monitoring pengisian kuesioner manajemen risiko seluruh satuan kerja dan eksekusi rubrik penilaian.
+            Sistem penilaian objektif skala 1–10 dengan ambang batas Pemahaman (≥30) dan Penerapan (≥12).
           </p>
         </div>
 
@@ -165,9 +174,9 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
           <div className="flex items-center gap-1.5">
             <button
               onClick={handleExportExcel}
-              disabled={totalCount === 0}
+              disabled={respondents.length === 0}
               className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg transition-colors shadow-xs ${
-                totalCount > 0
+                respondents.length > 0
                   ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
                   : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
               }`}
@@ -179,9 +188,9 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
 
             <button
               onClick={handleExportCsv}
-              disabled={totalCount === 0}
+              disabled={respondents.length === 0}
               className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium rounded-lg border transition-colors ${
-                totalCount > 0
+                respondents.length > 0
                   ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 cursor-pointer'
                   : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
               }`}
@@ -222,7 +231,7 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
             <span>Muat Data Contoh</span>
           </button>
 
-          {totalCount > 0 && (
+          {respondents.length > 0 && (
             <button
               onClick={() =>
                 setConfirmModal({
@@ -240,12 +249,80 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
         </div>
       </div>
 
+      {/* DASHBOARD HASIL AKUMULATIF & TINGKAT MATURITAS SATKER (PEDOMAN RESMI) */}
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-xl p-5 sm:p-6 shadow-md border border-slate-700 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-700/80 pb-3">
+          <div className="flex items-center gap-2">
+            <Award className="w-5 h-5 text-amber-400" />
+            <h2 className="text-sm sm:text-base font-bold text-white">
+              Rekapitulasi Capaian Maturitas Sampel Pegawai
+            </h2>
+          </div>
+          <div className="text-xs text-slate-300">
+            Satker Terpilih: <strong className="text-amber-300">{satkerFilter}</strong> ({satkerMaturity.evaluatedSample} dari {satkerMaturity.totalSample} dinilai)
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card 1: Pemahaman MR (Skor >= 30) */}
+          <div className="p-4 bg-slate-800/90 rounded-lg border border-slate-700 space-y-1.5">
+            <div className="flex items-center justify-between text-xs text-slate-300">
+              <span>Pemahaman MR (≥ 30 / 50)</span>
+              <span className="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-amber-300">Dasar Skor 1 - 3</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black font-mono text-emerald-400">
+                {satkerMaturity.pemahamanCukupPercent}%
+              </span>
+              <span className="text-xs text-slate-400">
+                ({satkerMaturity.pemahamanCukupCount} dari {satkerMaturity.evaluatedSample} pegawai)
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-snug">
+              Pegawai sampel dikategorikan <strong>Cukup Memahami</strong> apabila akumulatif skor Soal 1 s.d. 5 bernilai <strong>≥ 30</strong>.
+            </p>
+          </div>
+
+          {/* Card 2: Penerapan MR (Skor >= 12) */}
+          <div className="p-4 bg-slate-800/90 rounded-lg border border-slate-700 space-y-1.5">
+            <div className="flex items-center justify-between text-xs text-slate-300">
+              <span>Penerapan MR (≥ 12 / 20)</span>
+              <span className="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-amber-300">Dasar Skor 4 - 5</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black font-mono text-blue-400">
+                {satkerMaturity.penerapanMengetahuiPercent}%
+              </span>
+              <span className="text-xs text-slate-400">
+                ({satkerMaturity.penerapanMengetahuiCount} dari {satkerMaturity.evaluatedSample} pegawai)
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-snug">
+              Pegawai sampel disimpulkan <strong>Mengetahui Penerapan</strong> apabila akumulatif skor Soal 6 & 7 bernilai <strong>≥ 12</strong>.
+            </p>
+          </div>
+
+          {/* Card 3: Tingkat Maturitas Satker Hasil Evaluasi */}
+          <div className="p-4 bg-slate-800/90 rounded-lg border border-slate-700 space-y-1.5">
+            <div className="text-xs text-slate-300">Hasil Penilaian Maturitas Satker</div>
+            <div className="pt-0.5">
+              <span className="inline-block px-3 py-1 rounded-md text-sm font-black bg-amber-400 text-slate-950 shadow-xs">
+                {satkerMaturity.predikatTingkat}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-snug pt-1">
+              {satkerMaturity.keterangan}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Summary Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
           <div className="text-xs font-medium text-slate-500">Total Berkas Responden</div>
           <div className="mt-2 text-2xl font-bold text-slate-900 font-mono tabular-nums">{totalCount}</div>
-          <div className="mt-1 text-[11px] text-slate-400">Seluruh unit kerja Kemenkum</div>
+          <div className="mt-1 text-[11px] text-slate-400">Pegawai sampel unit kerja</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
@@ -254,7 +331,7 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
             <span>Menunggu Penilaian</span>
           </div>
           <div className="mt-2 text-2xl font-bold text-amber-700 font-mono tabular-nums">{pendingCount}</div>
-          <div className="mt-1 text-[11px] text-slate-400">Siap dievaluasi dengan rubrik</div>
+          <div className="mt-1 text-[11px] text-slate-400">Siap dievaluasi skala 1-10</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
@@ -267,12 +344,12 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-          <div className="text-xs font-medium text-slate-500">Rata-rata Indeks Maturitas</div>
+          <div className="text-xs font-medium text-slate-500">Rata-rata Nilai Indeks</div>
           <div className="mt-2 text-2xl font-bold text-slate-900 font-mono tabular-nums">
             {averageScore > 0 ? averageScore.toFixed(2) : '-'} <span className="text-xs text-slate-400 font-sans font-normal">/ 100</span>
           </div>
           <div className="mt-1 text-[11px] text-slate-500 font-medium">
-            {averageScore > 0 ? getMaturityCategory(averageScore).title : 'Belum ada data nilai'}
+            {averageScore > 0 ? getMaturityCategory(averageScore).badgeText : 'Belum ada data nilai'}
           </div>
         </div>
       </div>
@@ -343,16 +420,17 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
                 <th className="py-3 px-4">Responden & NIP</th>
                 <th className="py-3 px-4">Satuan Kerja & Jabatan</th>
                 <th className="py-3 px-4 text-center">Status UPR</th>
-                <th className="py-3 px-4">Waktu Kirim</th>
-                <th className="py-3 px-4 text-center">Status Penilaian</th>
-                <th className="py-3 px-4 text-right">Nilai Akhir</th>
+                <th className="py-3 px-4 text-center">Pemahaman (Soal 1-5)</th>
+                <th className="py-3 px-4 text-center">Penerapan (Soal 6-7)</th>
+                <th className="py-3 px-4 text-right">Nilai Akhir (70)</th>
+                <th className="py-3 px-4 text-center">Status</th>
                 <th className="py-3 px-4 text-center">Aksi Evaluator</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
                     <Filter className="w-8 h-8 mx-auto mb-2 text-slate-300" />
                     <p className="font-semibold text-slate-700">
                       {totalCount === 0 ? 'Belum Ada Berkas Responden' : 'Tidak ada data responden yang cocok.'}
@@ -362,28 +440,13 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
                         ? 'Database responden saat ini kosong. Pegawai dapat mengisi survei melalui Formulir Publik atau Anda dapat memuat data simulasi contoh.'
                         : 'Coba sesuaikan kata kunci pencarian atau ubah filter satuan kerja.'}
                     </p>
-                    {totalCount === 0 && (
-                      <div className="mt-4 flex items-center justify-center gap-3">
-                        <button
-                          onClick={onGoToPublicForm}
-                          className="px-3.5 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-                        >
-                          Buka Formulir Publik
-                        </button>
-                        <button
-                          onClick={handleResetMockDirect}
-                          className="px-3.5 py-2 text-xs font-semibold bg-amber-50 border border-amber-300 text-amber-900 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer"
-                        >
-                          Muat Data Contoh Awal
-                        </button>
-                      </div>
-                    )}
                   </td>
                 </tr>
               ) : (
                 filtered.map((item, index) => {
                   const isGraded = item.status === 'Sudah Dinilai' && item.evaluation;
-                  const maturity = isGraded && item.evaluation ? getMaturityCategory(item.evaluation.nilaiAkhir) : null;
+                  const ev = item.evaluation;
+                  const maturity = isGraded && ev ? getMaturityCategory(ev.nilaiAkhir, ev.skorPemahaman, ev.skorPenerapan) : null;
 
                   return (
                     <tr
@@ -422,31 +485,62 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-500 text-[11px] whitespace-nowrap">
-                        {item.timestamp}
-                      </td>
-
+                      {/* Skor Pemahaman Soal 1-5 */}
                       <td className="py-3.5 px-4 text-center">
-                        {isGraded ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            <CheckCircle className="w-3 h-3 text-emerald-600" />
-                            Sudah Dinilai
-                          </span>
+                        {isGraded && ev ? (
+                          <div>
+                            <div className="font-mono font-bold text-slate-900">
+                              {ev.skorPemahaman} <span className="text-[10px] text-slate-400 font-normal">/ 50</span>
+                            </div>
+                            <div className="mt-0.5">
+                              {ev.isPemahamanCukup ? (
+                                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                  Cukup Memahami
+                                </span>
+                              ) : (
+                                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
+                                  Kurang Memahami
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200">
-                            <Clock className="w-3 h-3 text-amber-600" />
-                            Belum Dinilai
-                          </span>
+                          <span className="text-slate-400 font-mono">-</span>
                         )}
                       </td>
 
+                      {/* Skor Penerapan Soal 6-7 */}
+                      <td className="py-3.5 px-4 text-center">
+                        {isGraded && ev ? (
+                          <div>
+                            <div className="font-mono font-bold text-slate-900">
+                              {ev.skorPenerapan} <span className="text-[10px] text-slate-400 font-normal">/ 20</span>
+                            </div>
+                            <div className="mt-0.5">
+                              {ev.isPenerapanMengetahui ? (
+                                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                                  Mengetahui MR
+                                </span>
+                              ) : (
+                                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                  Belum Mengetahui
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 font-mono">-</span>
+                        )}
+                      </td>
+
+                      {/* Nilai Akhir Indeks */}
                       <td className="py-3.5 px-4 text-right">
-                        {isGraded && item.evaluation && maturity ? (
+                        {isGraded && ev && maturity ? (
                           <div>
                             <div className="font-bold text-slate-900 font-mono tabular-nums text-sm">
-                              {item.evaluation.nilaiAkhir.toFixed(2)}
+                              {ev.nilaiAkhir.toFixed(2)}
                             </div>
-                            <div className={`text-[10px] font-medium ${maturity.colorClass}`}>
+                            <div className={`text-[10px] font-bold ${maturity.colorClass}`}>
                               {maturity.badgeText}
                             </div>
                           </div>
@@ -455,6 +549,22 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
                         )}
                       </td>
 
+                      {/* Status Penilaian */}
+                      <td className="py-3.5 px-4 text-center">
+                        {isGraded ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <CheckCircle className="w-3 h-3 text-emerald-600" />
+                            Selesai
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-200">
+                            <Clock className="w-3 h-3 text-amber-600" />
+                            Antrean
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Aksi Evaluator */}
                       <td className="py-3.5 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
@@ -465,7 +575,7 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
                                 : 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs'
                             }`}
                           >
-                            {isGraded ? 'Lihat / Ubah Nilai' : 'Mulai Nilai'}
+                            {isGraded ? 'Lihat / Ubah' : 'Mulai Nilai'}
                           </button>
 
                           {isGraded && (
@@ -487,8 +597,8 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
                                 targetName: item.nama,
                               })
                             }
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 rounded-lg transition-colors cursor-pointer"
-                            title="Hapus data responden ini"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Hapus berkas ini"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -503,39 +613,27 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
         </div>
       </div>
 
-      {/* IN-APP CONFIRMATION MODAL */}
+      {/* Confirmation Modal */}
       {confirmModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-2xl p-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-rose-50 text-rose-600 border border-rose-200">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-slate-900">
-                  {confirmModal.type === 'delete_single' ? 'Konfirmasi Hapus Responden' : 'Konfirmasi Kosongkan Seluruh Data'}
-                </h3>
+          <div className="w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-xl p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
               </div>
-              <button
-                onClick={() => setConfirmModal({ isOpen: false, type: 'delete_single' })}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  {confirmModal.type === 'clear_all' ? 'Kosongkan Semua Data?' : 'Hapus Berkas Responden?'}
+                </h3>
+                <p className="text-xs text-slate-500">Tindakan ini tidak dapat dibatalkan.</p>
+              </div>
             </div>
 
-            <div className="text-xs text-slate-600 leading-relaxed space-y-2 mb-6">
-              {confirmModal.type === 'delete_single' ? (
-                <p>
-                  Apakah Anda yakin ingin menghapus data responden{' '}
-                  <strong className="text-slate-900">{confirmModal.targetName}</strong>? Data yang dihapus tidak dapat dipulihkan kembali.
-                </p>
-              ) : (
-                <p>
-                  Apakah Anda yakin ingin <strong className="text-rose-700">menghapus seluruh berkas responden</strong> dari database? Seluruh data survei dan riwayat nilai akan dikosongkan.
-                </p>
-              )}
-            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              {confirmModal.type === 'clear_all'
+                ? 'Seluruh berkas survei dan hasil evaluasi akan dihapus secara permanen dari penyimpanan peramban.'
+                : `Apakah Anda yakin ingin menghapus berkas responden atas nama "${confirmModal.targetName}"?`}
+            </p>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
               <button
@@ -548,9 +646,9 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
               <button
                 type="button"
                 onClick={handleExecuteConfirm}
-                className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors cursor-pointer shadow-xs"
+                className="px-5 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors shadow-xs cursor-pointer"
               >
-                {confirmModal.type === 'delete_single' ? 'Ya, Hapus Data' : 'Ya, Kosongkan Semua'}
+                Ya, Hapus
               </button>
             </div>
           </div>

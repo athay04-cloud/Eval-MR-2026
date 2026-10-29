@@ -202,25 +202,6 @@ export const SecurityShield: React.FC<SecurityShieldProps> = ({ isPrintModalOpen
 
   return (
     <>
-      {/* 
-        High-Density Forensic Security Watermark Overlay 
-        z-30 ensures watermark sits OVER all white cards, form inputs, and questions.
-        pointer-events-none ensures users can click, scroll, and type without any obstruction.
-      */}
-      <div
-        className="fixed inset-0 pointer-events-none z-30 select-none overflow-hidden flex flex-wrap gap-x-8 gap-y-12 p-3 sm:p-6 items-center justify-around opacity-20 dark:opacity-25"
-        aria-hidden="true"
-      >
-        {Array.from({ length: 48 }).map((_, i) => (
-          <div
-            key={i}
-            className="transform -rotate-25 text-[10px] sm:text-xs font-black text-rose-950 tracking-wider whitespace-nowrap uppercase font-mono border-y-2 border-dashed border-rose-900/60 py-1 px-2 bg-rose-500/5"
-          >
-            KEMENKUM RI · DOKUMEN TERTUTUP · DILARANG SCREENSHOT · {sessionToken}
-          </div>
-        ))}
-      </div>
-
       {/* Floating Security Alert Toast */}
       {securityAlert && (
         <div className="fixed top-20 right-4 sm:right-8 z-50 max-w-sm w-full bg-slate-900 text-white rounded-xl shadow-2xl border border-slate-700 p-4 animate-in slide-in-from-top-4 duration-200">

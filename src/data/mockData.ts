@@ -22,7 +22,7 @@ export const INITIAL_MOCK_RESPONDENTS: Respondent[] = [
     },
     status: 'Sudah Dinilai',
     evaluation: calculateEvaluation(
-      { 1: 4, 2: 4, 3: 4, 4: 4, 5: 3, 6: 4, 7: 3 }, // Total 26 / 28 => 92.86
+      { 1: 10, 2: 9, 3: 9, 4: 10, 5: 8, 6: 9, 7: 8 }, // Pemahaman: 46/50 (>=30), Penerapan: 17/20 (>=12) => Total 63/70 (90%)
       'Responden memiliki pemahaman tata kelola risiko yang sangat matang dan terbukti aktif mengintegrasikan register risiko ke dalam dokumen perencanaan anggaran satker.',
       {
         1: 'Definisi sangat komprehensif mencakup aspek sasaran dan tata kelola terpadu.',
@@ -95,7 +95,7 @@ export const INITIAL_MOCK_RESPONDENTS: Respondent[] = [
     },
     status: 'Sudah Dinilai',
     evaluation: calculateEvaluation(
-      { 1: 2, 2: 2, 3: 2, 4: 2, 5: 3, 6: 2, 7: 2 }, // Total 15 / 28 => 53.57 => Level 1 / Perlu Pembinaan
+      { 1: 5, 2: 4, 3: 5, 4: 5, 5: 6, 6: 5, 7: 4 }, // Pemahaman: 25/50 (<30), Penerapan: 9/20 (<12) => Total 34/70 (48.57%)
       'Responden memiliki pemahaman operasional pengadaan yang cukup, namun konsep formal tata kelola manajemen risiko masih perlu ditingkatkan melalui diklat teknis SPIP/MR terstruktur.',
       {
         1: 'Pemahaman masih berorientasi pada aspek kepatuhan audit semata.',
@@ -109,7 +109,7 @@ export const INITIAL_MOCK_RESPONDENTS: Respondent[] = [
   }
 ];
 
-export const STORAGE_KEY_RESPONDENTS = 'smr_kemenkum_respondents_v1';
+export const STORAGE_KEY_RESPONDENTS = 'smr_kemenkum_respondents_v2';
 export const STORAGE_KEY_AUTH = 'smr_evaluator_session_v1';
 export const STORAGE_KEY_CUSTOM_PIN = 'smr_evaluator_custom_pin_v1';
 export const DEFAULT_PINS = ['123456', 'evaluasi2026'];

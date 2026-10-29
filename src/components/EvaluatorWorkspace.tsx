@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Save, Printer, HelpCircle, Check, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Printer, HelpCircle, Check, Sparkles, Award, CheckCircle2, XCircle } from 'lucide-react';
 import { Respondent } from '../types';
 import { QUESTIONS_DATA } from '../data/questions';
 import { calculateEvaluation, getMaturityCategory } from '../utils/scoring';
@@ -17,15 +17,14 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
   onSaveEvaluation,
   onPrintReport,
 }) => {
-  // Initialize scores: either existing evaluation scores or blank/default
+  // Initialize scores: scale 1-10 (default 7 if not set)
   const [scores, setScores] = useState<Record<number, number>>(() => {
     if (respondent.evaluation?.scores) {
       return { ...respondent.evaluation.scores };
     }
-    // Default to initial 0 or 3
     const initial: Record<number, number> = {};
     for (let i = 1; i <= 7; i++) {
-      initial[i] = 3; // sensible starting point for active assessment
+      initial[i] = 7; // standard starting point on 1-10 scale
     }
     return initial;
   });
@@ -48,7 +47,7 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
 
   const [saveSuccessNotification, setSaveSuccessNotification] = useState(false);
 
-  // Real-time calculation
+  // Real-time calculation using 1-10 scale and 30 / 12 thresholds
   const currentEvaluation = useMemo(() => {
     return calculateEvaluation(
       scores,
@@ -61,13 +60,18 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
   }, [scores, catatanUmum, itemNotes, evaluatorName, evaluatorNip, respondent.evaluation]);
 
   const maturityInfo = useMemo(() => {
-    return getMaturityCategory(currentEvaluation.nilaiAkhir);
-  }, [currentEvaluation.nilaiAkhir]);
+    return getMaturityCategory(
+      currentEvaluation.nilaiAkhir,
+      currentEvaluation.skorPemahaman,
+      currentEvaluation.skorPenerapan
+    );
+  }, [currentEvaluation.nilaiAkhir, currentEvaluation.skorPemahaman, currentEvaluation.skorPenerapan]);
 
   const handleScoreChange = (questionId: number, value: number) => {
+    const clamped = Math.max(1, Math.min(10, Math.round(value)));
     setScores((prev) => ({
       ...prev,
-      [questionId]: value,
+      [questionId]: clamped,
     }));
   };
 
@@ -98,10 +102,10 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
     }, 3500);
   };
 
-  const handleApplyPreset = (level: 1 | 2 | 3 | 4) => {
+  const handleApplyPreset = (value: number) => {
     const newScores: Record<number, number> = {};
     for (let i = 1; i <= 7; i++) {
-      newScores[i] = level;
+      newScores[i] = value;
     }
     setScores(newScores);
   };
@@ -138,7 +142,7 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer shadow-xs"
           >
             <Printer className="w-3.5 h-3.5 text-slate-600" />
-            <span>Cetak / Ekspor Lembar Kerja</span>
+            <span>Cetak / PDF Lembar Kerja</span>
           </button>
 
           <button
@@ -156,7 +160,7 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-              Lembar Kerja Penilaian Responden
+              Lembar Kerja Evaluasi Pegawai Sampel
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
               {respondent.nama}
@@ -204,39 +208,93 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
         </div>
       </div>
 
+      {/* METRIC STANDARDS NOTICE BANNER (Berdasarkan Pedoman Penilaian) */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-950 space-y-2">
+        <div className="flex items-center gap-2 font-bold text-amber-900">
+          <Award className="w-4 h-4 text-amber-700" />
+          <span>Ketentuan & Rumus Penilaian Resmi Manajemen Risiko:</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] leading-relaxed">
+          <div className="p-2.5 bg-white/80 rounded-lg border border-amber-200">
+            <p className="font-bold text-slate-900 mb-1">1. Khusus Pemahaman Manajemen Risiko (Soal 1 s.d. 5):</p>
+            <p className="text-slate-700">
+              Masing-masing pertanyaan berbobot 10 (skala 1–10). Nilai akumulatif maksimal 50. Apabila bernilai <strong>≥ 30</strong> dikategorikan <strong>Cukup Memahami</strong>. Persentase sampel bernilai ≥ 30 menentukan capaian <strong>Skor 1 - 3</strong>.
+            </p>
+          </div>
+          <div className="p-2.5 bg-white/80 rounded-lg border border-amber-200">
+            <p className="font-bold text-slate-900 mb-1">2. Khusus Penerapan Manajemen Risiko (Soal 6 & 7):</p>
+            <p className="text-slate-700">
+              Masing-masing pertanyaan berbobot 10 (skala 1–10). Nilai akumulatif maksimal 20. Apabila bernilai <strong>≥ 12</strong> disimpulkan pegawai <strong>Mengetahui Penerapan Manajemen Risiko</strong>. Persentase sampel bernilai ≥ 12 menentukan capaian <strong>Skor 4 - 5</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* STICKY LIVE SCORECARD BANNER */}
       <div className="sticky top-16 z-30 bg-slate-900 text-white rounded-xl p-4 sm:p-5 shadow-lg border border-slate-800">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6">
-            {/* Bagian A */}
+            {/* Bagian A Pemahaman */}
             <div>
               <div className="text-[11px] text-slate-400 font-medium">Skor Pemahaman (A)</div>
               <div className="mt-0.5 text-lg sm:text-xl font-bold font-mono tabular-nums text-amber-300">
-                {currentEvaluation.skorPemahaman} <span className="text-xs text-slate-400 font-normal">/ 20</span>
+                {currentEvaluation.skorPemahaman} <span className="text-xs text-slate-400 font-normal">/ 50</span>
+              </div>
+              <div className="mt-1">
+                {currentEvaluation.isPemahamanCukup ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-500/40 px-1.5 py-0.5 rounded">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>Cukup Memahami (≥30)</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-400 bg-rose-950/70 border border-rose-500/40 px-1.5 py-0.5 rounded">
+                    <XCircle className="w-3 h-3" />
+                    <span>Kurang Memahami (&lt;30)</span>
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Bagian B */}
+            {/* Bagian B Penerapan */}
             <div>
               <div className="text-[11px] text-slate-400 font-medium">Skor Penerapan (B)</div>
               <div className="mt-0.5 text-lg sm:text-xl font-bold font-mono tabular-nums text-amber-300">
-                {currentEvaluation.skorPenerapan} <span className="text-xs text-slate-400 font-normal">/ 8</span>
+                {currentEvaluation.skorPenerapan} <span className="text-xs text-slate-400 font-normal">/ 20</span>
+              </div>
+              <div className="mt-1">
+                {currentEvaluation.isPenerapanMengetahui ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-500/40 px-1.5 py-0.5 rounded">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>Mengetahui Penerapan (≥12)</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-400 bg-rose-950/70 border border-rose-500/40 px-1.5 py-0.5 rounded">
+                    <XCircle className="w-3 h-3" />
+                    <span>Belum Mengetahui (&lt;12)</span>
+                  </span>
+                )}
               </div>
             </div>
 
             {/* Total Poin */}
             <div>
-              <div className="text-[11px] text-slate-400 font-medium">Total Skor Diperoleh</div>
+              <div className="text-[11px] text-slate-400 font-medium">Total Akumulasi Skor</div>
               <div className="mt-0.5 text-lg sm:text-xl font-bold font-mono tabular-nums text-white">
-                {currentEvaluation.totalSkor} <span className="text-xs text-slate-400 font-normal">/ 28</span>
+                {currentEvaluation.totalSkor} <span className="text-xs text-slate-400 font-normal">/ 70</span>
+              </div>
+              <div className="mt-1 text-[10px] text-slate-400">
+                Maksimal 7 butir × 10
               </div>
             </div>
 
-            {/* Nilai Akhir */}
+            {/* Nilai Akhir Indeks */}
             <div>
               <div className="text-[11px] text-slate-400 font-medium">Nilai Akhir Indeks</div>
               <div className="mt-0.5 text-2xl font-black font-mono tabular-nums text-emerald-400">
                 {currentEvaluation.nilaiAkhir.toFixed(2)} <span className="text-xs text-slate-400 font-normal">/ 100</span>
+              </div>
+              <div className="mt-1 text-[10px] text-slate-400">
+                Skor Relatif Keseluruhan
               </div>
             </div>
           </div>
@@ -244,9 +302,9 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
           {/* Maturity Category Badge */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 border-t lg:border-t-0 lg:border-l border-slate-700 pt-3 lg:pt-0 lg:pl-6">
             <div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider">Kategori Maturitas Otomatis</div>
-              <div className="text-sm font-bold text-white flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded text-xs font-bold ${maturityInfo.badgeBg}`}>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider">Tingkat Maturitas Pegawai</div>
+              <div className="text-sm font-bold text-white flex items-center gap-2 mt-0.5">
+                <span className={`px-2.5 py-1 rounded text-xs font-bold ${maturityInfo.badgeBg}`}>
                   {maturityInfo.badgeText}
                 </span>
               </div>
@@ -256,19 +314,27 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
               <span className="text-[11px] text-slate-400 hidden xl:inline">Preset:</span>
               <button
                 type="button"
-                onClick={() => handleApplyPreset(4)}
+                onClick={() => handleApplyPreset(10)}
                 className="px-2 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded cursor-pointer"
-                title="Terapkan Nilai 4 ke semua soal"
+                title="Terapkan Skor 10 ke semua butir soal"
               >
-                Max 4
+                Semua 10
               </button>
               <button
                 type="button"
-                onClick={() => handleApplyPreset(3)}
+                onClick={() => handleApplyPreset(8)}
                 className="px-2 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded cursor-pointer"
-                title="Terapkan Nilai 3 ke semua soal"
+                title="Terapkan Skor 8 ke semua butir soal"
               >
-                Baik 3
+                Semua 8
+              </button>
+              <button
+                type="button"
+                onClick={() => handleApplyPreset(5)}
+                className="px-2 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 rounded cursor-pointer"
+                title="Terapkan Skor 5 ke semua butir soal"
+              >
+                Semua 5
               </button>
             </div>
           </div>
@@ -277,14 +343,17 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
 
       {/* SECTION A: PEMAHAMAN (Soal 1 s/d 5) */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-slate-200 gap-2">
           <div>
             <h2 className="text-lg font-bold text-slate-900">
-              Bagian A: Pemahaman Konseptual & Regulasi Risiko
+              Khusus Pemahaman Manajemen Risiko (Soal 1 s.d. 5)
             </h2>
             <p className="text-xs text-slate-500">
-              5 Butir Pertanyaan · Bobot Skor Maksimal: 20 (Nilai 1–4 per butir)
+              5 Butir Pertanyaan · Masing-masing berbobot 10 (Skor Maksimal: 50) · <strong>Ambang batas Cukup Memahami ≥ 30</strong>
             </p>
+          </div>
+          <div className="text-xs font-semibold px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700 border border-slate-200 w-fit">
+            Subtotal Pemahaman: <strong className="text-slate-900 font-mono">{currentEvaluation.skorPemahaman}</strong> / 50
           </div>
         </div>
 
@@ -293,7 +362,7 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
             key={q.id}
             question={q}
             userAnswer={respondent.answers[q.id] || '(Tidak ada jawaban responden)'}
-            selectedScore={scores[q.id] || 1}
+            selectedScore={scores[q.id] || 7}
             onSelectScore={(val) => handleScoreChange(q.id, val)}
             itemNote={itemNotes[q.id] || ''}
             onItemNoteChange={(val) => handleItemNoteChange(q.id, val)}
@@ -303,14 +372,17 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
 
       {/* SECTION B: PENERAPAN (Soal 6 s/d 7) */}
       <div className="space-y-6 pt-4">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-slate-200 gap-2">
           <div>
             <h2 className="text-lg font-bold text-slate-900">
-              Bagian B: Penerapan & Bukti Dokumen Pengambilan Keputusan
+              Khusus Penerapan Manajemen Risiko (Soal 6 & 7)
             </h2>
             <p className="text-xs text-slate-500">
-              2 Butir Pertanyaan · Bobot Skor Maksimal: 8 (Nilai 1–4 per butir)
+              2 Butir Pertanyaan · Masing-masing berbobot 10 (Skor Maksimal: 20) · <strong>Ambang batas Mengetahui Penerapan ≥ 12</strong>
             </p>
+          </div>
+          <div className="text-xs font-semibold px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700 border border-slate-200 w-fit">
+            Subtotal Penerapan: <strong className="text-slate-900 font-mono">{currentEvaluation.skorPenerapan}</strong> / 20
           </div>
         </div>
 
@@ -319,7 +391,7 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
             key={q.id}
             question={q}
             userAnswer={respondent.answers[q.id] || '(Tidak ada jawaban responden)'}
-            selectedScore={scores[q.id] || 1}
+            selectedScore={scores[q.id] || 7}
             onSelectScore={(val) => handleScoreChange(q.id, val)}
             itemNote={itemNotes[q.id] || ''}
             onItemNoteChange={(val) => handleItemNoteChange(q.id, val)}
@@ -327,26 +399,21 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
         ))}
       </div>
 
-      {/* GENERAL EVALUATOR RECOMMENDATION & SIGNATURE */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-6">
-        <div className="pb-3 border-b border-slate-100">
-          <h3 className="text-base font-bold text-slate-900">
-            Catatan Rekomendasi & Identitas Evaluator
-          </h3>
-          <p className="text-xs text-slate-500">
-            Kesimpulan evaluasi ini akan dicantumkan dalam lembar kerja resmi dan laporan pertanggungjawaban maturitas risiko.
-          </p>
-        </div>
+      {/* Evaluator Notes & Sign-off Section */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+        <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
+          Catatan & Pengesahan Hasil Evaluasi
+        </h3>
 
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Catatan / Rekomendasi Umum Tim Evaluator
+            Catatan Rekomendasi / Evaluasi Umum untuk Satuan Kerja & Responden
           </label>
           <textarea
             rows={3}
             value={catatanUmum}
             onChange={(e) => setCatatanUmum(e.target.value)}
-            placeholder="Tuliskan analisis komprehensif atas kompetensi responden, area yang perlu diperbaiki, serta rekomendasi pembinaan/pelatihan lanjut bagi satker..."
+            placeholder="Tuliskan evaluasi komprehensif, catatan kekuatan pemahaman, kelemahan penerapan, atau rekomendasi workshop/asistensi..."
             className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900 focus:bg-white text-slate-900"
           />
         </div>
@@ -379,9 +446,9 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
 
         <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-xs text-slate-500">
-            Status Terkini:{' '}
+            Hasil Penilaian:{' '}
             <strong className="text-slate-800">
-              Nilai {currentEvaluation.nilaiAkhir.toFixed(2)} ({maturityInfo.title})
+              Skor Total {currentEvaluation.totalSkor}/70 ({currentEvaluation.nilaiAkhir.toFixed(2)}%) · {maturityInfo.title}
             </strong>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -424,6 +491,16 @@ const EvaluationItemCard: React.FC<EvaluationItemCardProps> = ({
 }) => {
   const [showNoteField, setShowNoteField] = useState(Boolean(itemNote));
 
+  // Determine qualitative label for current score on 1-10 scale
+  const getScoreBadge = (val: number) => {
+    if (val >= 9) return { label: 'Sangat Lengkap', color: 'bg-emerald-50 text-emerald-800 border-emerald-300' };
+    if (val >= 7) return { label: 'Cukup / Baik', color: 'bg-blue-50 text-blue-800 border-blue-300' };
+    if (val >= 4) return { label: 'Kurang', color: 'bg-amber-50 text-amber-800 border-amber-300' };
+    return { label: 'Sangat Kurang', color: 'bg-rose-50 text-rose-800 border-rose-300' };
+  };
+
+  const badge = getScoreBadge(selectedScore);
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
       {/* Question Header */}
@@ -433,9 +510,17 @@ const EvaluationItemCard: React.FC<EvaluationItemCardProps> = ({
             Soal {question.id}
           </span>
           <h3 className="text-sm font-bold text-slate-900">{question.title}</h3>
+          <span className="text-[11px] font-semibold text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded">
+            Bobot Maks: 10
+          </span>
         </div>
-        <div className="text-xs text-slate-500 font-medium">
-          Nilai Dipilih: <span className="font-mono font-bold text-slate-900 text-sm">{selectedScore}</span> / 4
+        <div className="flex items-center gap-2 text-xs">
+          <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${badge.color}`}>
+            {badge.label}
+          </span>
+          <span className="text-slate-500 font-medium">
+            Nilai: <strong className="font-mono text-slate-900 text-sm">{selectedScore}</strong> / 10
+          </span>
         </div>
       </div>
 
@@ -445,94 +530,95 @@ const EvaluationItemCard: React.FC<EvaluationItemCardProps> = ({
           &quot;{question.question}&quot;
         </p>
 
-        {/* Side-by-side or stacked: Jawaban Asli Responden vs Kisi-Kisi Jawaban Ideal */}
+        {/* Side-by-side: Jawaban Asli Responden vs Kisi-Kisi Jawaban Ideal */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Box Jawaban Asli Responden */}
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex flex-col">
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200">
-              <span className="text-xs font-bold text-slate-800">
-                Jawaban Asli Responden
-              </span>
-              <span className="text-[10px] text-slate-500 font-mono">
-                {userAnswer.length} karakter
-              </span>
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+            <div className="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span>Jawaban Responden (Pegawai Sampel):</span>
             </div>
-            <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line flex-1">
+            <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-wrap font-sans bg-white p-3 rounded border border-slate-200 min-h-[90px]">
               {userAnswer}
             </div>
           </div>
 
           {/* Box Kisi-Kisi Jawaban Ideal */}
-          <div className="p-4 rounded-lg bg-amber-50/50 border border-amber-200 flex flex-col">
-            <div className="flex items-center gap-1.5 pb-2 mb-2 border-b border-amber-200/60 text-amber-900">
-              <HelpCircle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-              <span className="text-xs font-bold">
-                Kisi-Kisi Jawaban Ideal (Acuan Penilai)
-              </span>
+          <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-lg">
+            <div className="text-[11px] font-bold text-amber-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>Kisi-Kisi Jawaban Ideal & Indikator Utama:</span>
             </div>
-            <div className="text-xs text-slate-700 leading-relaxed whitespace-pre-line font-sans flex-1">
+            <div className="text-xs text-amber-950 leading-relaxed whitespace-pre-wrap font-sans bg-white/80 p-3 rounded border border-amber-200 min-h-[90px]">
               {question.kisiKisi}
             </div>
           </div>
         </div>
 
-        {/* Rubrik Penilaian Skala 1 - 4 */}
-        <div className="pt-2 border-t border-slate-100">
-          <div className="text-xs font-bold text-slate-800 mb-3 flex items-center justify-between">
-            <span>Pilihan Nilai Rubrik (Skala 1 - 4):</span>
+        {/* 1 - 10 Score Selector */}
+        <div className="pt-2 border-t border-slate-100 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs font-bold text-slate-800">
+            <span>Pemberian Nilai Objektif Evaluator (Skala 1 - 10):</span>
             <span className="text-[11px] text-slate-500 font-normal">
-              Pilih salah satu sesuai kesesuaian jawaban dengan indikator
+              Pilih nilai 1 sampai 10 sesuai kedalaman jawaban dengan indikator
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {[1, 2, 3, 4].map((level) => {
-              const isSelected = selectedScore === level;
-              const titleMap: Record<number, string> = {
-                1: '1 = Sangat Kurang',
-                2: '2 = Kurang',
-                3: '3 = Baik / Cukup',
-                4: '4 = Sangat Lengkap',
-              };
+          {/* 1 to 10 Button Bar */}
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
+              const isSelected = selectedScore === num;
+              let activeColor = 'bg-slate-900 text-white border-slate-900';
+              let badgeText = `${num}`;
+
+              if (num >= 9) {
+                activeColor = 'bg-emerald-700 text-white border-emerald-700 ring-2 ring-emerald-400';
+              } else if (num >= 7) {
+                activeColor = 'bg-blue-700 text-white border-blue-700 ring-2 ring-blue-400';
+              } else if (num >= 4) {
+                activeColor = 'bg-amber-600 text-white border-amber-600 ring-2 ring-amber-300';
+              } else {
+                activeColor = 'bg-rose-700 text-white border-rose-700 ring-2 ring-rose-300';
+              }
 
               return (
-                <label
-                  key={level}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col justify-between ${
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => onSelectScore(num)}
+                  className={`py-2 px-1 text-xs font-mono font-bold rounded-lg border transition-all text-center cursor-pointer flex flex-col items-center justify-center ${
                     isSelected
-                      ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
-                      : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 hover:bg-slate-50'
+                      ? `${activeColor} shadow-sm scale-105`
+                      : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:border-slate-300'
                   }`}
+                  title={`Berikan Skor ${num} / 10`}
                 >
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span
-                        className={`text-xs font-bold ${
-                          isSelected ? 'text-amber-300' : 'text-slate-900'
-                        }`}
-                      >
-                        {titleMap[level]}
-                      </span>
-                      <input
-                        type="radio"
-                        name={`score-question-${question.id}`}
-                        value={level}
-                        checked={isSelected}
-                        onChange={() => onSelectScore(level)}
-                        className="text-slate-900 focus:ring-slate-900"
-                      />
-                    </div>
-                    <p
-                      className={`text-[11px] leading-relaxed line-clamp-4 ${
-                        isSelected ? 'text-slate-200' : 'text-slate-500'
-                      }`}
-                    >
-                      {question.rubrik[level as 1 | 2 | 3 | 4]}
-                    </p>
-                  </div>
-                </label>
+                  <span className="text-sm">{badgeText}</span>
+                  <span className="text-[9px] font-sans font-normal opacity-75">
+                    {num >= 9 ? 'Sgt Baik' : num >= 7 ? 'Cukup' : num >= 4 ? 'Kurang' : 'Sgt Krg'}
+                  </span>
+                </button>
               );
             })}
+          </div>
+
+          {/* Rubric Guide Interval Details */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 text-[11px]">
+            <div className={`p-2 rounded border ${selectedScore <= 3 ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+              <strong className="block mb-0.5">Skor 1 - 3 (Sangat Kurang):</strong>
+              <p className="line-clamp-2">{question.rubrik[1]}</p>
+            </div>
+            <div className={`p-2 rounded border ${selectedScore >= 4 && selectedScore <= 6 ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+              <strong className="block mb-0.5">Skor 4 - 6 (Kurang):</strong>
+              <p className="line-clamp-2">{question.rubrik[2]}</p>
+            </div>
+            <div className={`p-2 rounded border ${selectedScore >= 7 && selectedScore <= 8 ? 'bg-blue-50 border-blue-300 text-blue-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+              <strong className="block mb-0.5">Skor 7 - 8 (Cukup / Baik):</strong>
+              <p className="line-clamp-2">{question.rubrik[3]}</p>
+            </div>
+            <div className={`p-2 rounded border ${selectedScore >= 9 ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+              <strong className="block mb-0.5">Skor 9 - 10 (Sangat Lengkap):</strong>
+              <p className="line-clamp-2">{question.rubrik[4]}</p>
+            </div>
           </div>
         </div>
 
@@ -567,7 +653,7 @@ const EvaluationItemCard: React.FC<EvaluationItemCardProps> = ({
                 type="text"
                 value={itemNote}
                 onChange={(e) => onItemNoteChange(e.target.value)}
-                placeholder="Contoh: Jawaban cukup tepat namun belum menyertakan nomor Permenkum yang spesifik..."
+                placeholder="Contoh: Penjelasan tahapan sudah tepat namun belum menyertakan pemantauan berkala..."
                 className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-slate-900 focus:bg-white"
               />
             </div>
