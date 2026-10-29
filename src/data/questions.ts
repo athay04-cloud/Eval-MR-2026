@@ -23,14 +23,14 @@ export const QUESTIONS_DATA: QuestionDefinition[] = [
     categoryTitle: 'Bagian A: Pemahaman Manajemen Risiko',
     title: 'Dasar Hukum Penerapan Manajemen Risiko',
     question: 'Apa dasar hukum penerapan manajemen risiko di lingkungan Kemenkum?',
-    placeholder: 'Sebutkan peraturan perundang-undangan, Peraturan Pemerintah, Permenkumham/Permenkum, Kepmen, atau regulasi SPIP terkait...',
+    placeholder: 'Sebutkan peraturan perundang-undangan, Peraturan Pemerintah, Permenkum 15 Tahun 2025, Kepmen, atau regulasi SPIP terkait...',
     bobotMax: 10,
-    kisiKisi: `• PP No. 60 Tahun 2008 tentang Sistem Pengendalian Intern Pemerintah (SPIP) - khususnya sub-unsur Penilaian Risiko.\n• Peraturan Menteri Hukum dan HAM (Permenkumham) terkait Penyelenggaraan Sistem Pengendalian Intern Pemerintah dan Manajemen Risiko di Lingkungan Kemenkumham/Kemenkum.\n• Keputusan Menteri tentang Pedoman Pelaksanaan Manajemen Risiko dan Piagam Manajemen Risiko.\n• Standar Internasional ISO 31000:2018 (Risk Management - Guidelines) sebagai acuan rujukan teknis.`,
+    kisiKisi: `• PP No. 60 Tahun 2008 tentang Sistem Pengendalian Intern Pemerintah (SPIP) - khususnya sub-unsur Penilaian Risiko.\n• Peraturan Menteri Hukum (Permenkum) No. 15 Tahun 2025 tentang Penerapan Manajemen Risiko di Lingkungan Kementerian Hukum.\n• Keputusan Menteri tentang Pedoman Pelaksanaan Manajemen Risiko dan Piagam Manajemen Risiko.\n• Standar Internasional ISO 31000:2018 (Risk Management - Guidelines) sebagai acuan rujukan teknis.`,
     rubrik: {
       1: 'Sangat Kurang (1-3): Tidak tahu / tidak menyebutkan dasar hukum sama sekali atau menyebutkan regulasi yang sama sekali tidak relevan.',
       2: 'Kurang (4-6): Hanya menyebutkan peraturan umum (misalnya hanya menyebut "UUD 1945" atau "peraturan menteri" tanpa nomor dan substansi yang jelas).',
-      3: 'Cukup / Baik (7-8): Menyebutkan minimal 1 regulasi pokok yang tepat (misal: PP 60/2008 tentang SPIP atau Permenkum/Kepmen Manajemen Risiko).',
-      4: 'Sangat Lengkap (9-10): Menyebutkan kombinasi regulasi hierarki lengkap: PP No. 60/2008 (SPIP), Permenkum/Kepmen penerapan manajemen risiko kemenkum, dan acuan pedoman teknis/ISO 31000.'
+      3: 'Cukup / Baik (7-8): Menyebutkan minimal 1 regulasi pokok yang tepat (misal: PP 60/2008 tentang SPIP atau Permenkum 15 Tahun 2025 tentang Manajemen Risiko).',
+      4: 'Sangat Lengkap (9-10): Menyebutkan kombinasi regulasi hierarki lengkap: PP No. 60/2008 (SPIP), Permenkum 15 Tahun 2025 tentang Manajemen Risiko di Lingkungan Kementerian Hukum, dan acuan pedoman teknis/ISO 31000.'
     }
   },
   {
