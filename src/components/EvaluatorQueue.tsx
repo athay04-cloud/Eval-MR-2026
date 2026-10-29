@@ -13,7 +13,8 @@ import {
   FileSpreadsheet,
   Download,
   Building2,
-  Check
+  Check,
+  KeyRound,
 } from 'lucide-react';
 import { Respondent, StatusPenilaian } from '../types';
 import { getMaturityCategory } from '../utils/scoring';
@@ -28,6 +29,7 @@ interface EvaluatorQueueProps {
   onClearAllRespondents: () => void;
   onResetToMock: () => void;
   onGoToPublicForm: () => void;
+  onOpenChangePinModal?: () => void;
 }
 
 export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
@@ -38,6 +40,7 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
   onClearAllRespondents,
   onResetToMock,
   onGoToPublicForm,
+  onOpenChangePinModal,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'Semua' | StatusPenilaian>('Semua');
@@ -198,6 +201,17 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
             <UserPlus className="w-3.5 h-3.5 text-slate-500" />
             <span>Form Publik</span>
           </button>
+
+          {onOpenChangePinModal && (
+            <button
+              onClick={onOpenChangePinModal}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+              title="Perbarui PIN pengaman lembar kerja evaluator"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-amber-600" />
+              <span>Ubah PIN</span>
+            </button>
+          )}
 
           <button
             onClick={handleResetMockDirect}

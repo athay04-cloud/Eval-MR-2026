@@ -15,6 +15,15 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
   onClose,
   respondent,
 }) => {
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('allow-print');
+    }
+    return () => {
+      document.body.classList.remove('allow-print');
+    };
+  }, [isOpen]);
+
   if (!isOpen || !respondent) return null;
 
   const evaluation = respondent.evaluation;

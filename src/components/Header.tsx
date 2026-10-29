@@ -1,5 +1,4 @@
-import React from 'react';
-import { ShieldCheck, LogIn, LogOut, FileText, LayoutDashboard } from 'lucide-react';
+import { ShieldCheck, LogIn, LogOut, FileText, LayoutDashboard, KeyRound } from 'lucide-react';
 
 interface HeaderProps {
   currentPortal: 'public' | 'evaluator';
@@ -7,6 +6,7 @@ interface HeaderProps {
   onOpenLoginModal: () => void;
   onLogout: () => void;
   onSwitchPortal: (portal: 'public' | 'evaluator') => void;
+  onOpenChangePinModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -15,6 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLoginModal,
   onLogout,
   onSwitchPortal,
+  onOpenChangePinModal,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-xs">
@@ -100,6 +101,17 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="hidden lg:inline-block text-xs font-semibold px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded-md whitespace-nowrap">
                   Akses Evaluator
                 </span>
+
+                {onOpenChangePinModal && (
+                  <button
+                    onClick={onOpenChangePinModal}
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                    title="Ubah PIN Pengaman Evaluator"
+                  >
+                    <KeyRound className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span className="hidden sm:inline">Ubah PIN</span>
+                  </button>
+                )}
 
                 <button
                   onClick={onLogout}

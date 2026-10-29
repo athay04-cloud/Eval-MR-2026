@@ -111,4 +111,35 @@ export const INITIAL_MOCK_RESPONDENTS: Respondent[] = [
 
 export const STORAGE_KEY_RESPONDENTS = 'smr_kemenkum_respondents_v1';
 export const STORAGE_KEY_AUTH = 'smr_evaluator_session_v1';
+export const STORAGE_KEY_CUSTOM_PIN = 'smr_evaluator_custom_pin_v1';
 export const DEFAULT_PINS = ['123456', 'evaluasi2026'];
+
+export function verifyEvaluatorPin(inputPin: string): boolean {
+  const clean = inputPin.trim();
+  if (!clean) return false;
+  try {
+    const customPin = localStorage.getItem(STORAGE_KEY_CUSTOM_PIN);
+    if (customPin) {
+      return clean === customPin;
+    }
+  } catch {
+    // fallback
+  }
+  return DEFAULT_PINS.includes(clean);
+}
+
+export function setCustomEvaluatorPin(newPin: string): void {
+  localStorage.setItem(STORAGE_KEY_CUSTOM_PIN, newPin.trim());
+}
+
+export function resetCustomEvaluatorPin(): void {
+  localStorage.removeItem(STORAGE_KEY_CUSTOM_PIN);
+}
+
+export function hasCustomPin(): boolean {
+  try {
+    return Boolean(localStorage.getItem(STORAGE_KEY_CUSTOM_PIN));
+  } catch {
+    return false;
+  }
+}

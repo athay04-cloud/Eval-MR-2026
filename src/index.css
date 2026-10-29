@@ -7,8 +7,15 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    -webkit-touch-callout: none;
   }
   
+  img {
+    -webkit-user-drag: none;
+    user-drag: none;
+    pointer-events: none;
+  }
+
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
@@ -21,10 +28,35 @@
   }
 }
 
+/* Instant CSS blur & blanking when window focus is lost or capture tool invoked */
+body.screen-shield-active #root {
+  filter: blur(40px) brightness(30%) grayscale(100%) !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  opacity: 0.05 !important;
+  transition: none !important;
+}
+
 @media print {
   @page {
     size: A4 portrait;
     margin: 8mm 10mm;
+  }
+
+  /* Block unauthorized printing if not inside PrintReportModal */
+  body:not(.allow-print) #root {
+    display: none !important;
+  }
+
+  body:not(.allow-print)::before {
+    content: "DOKUMEN TERTUTUP - PENCETAKAN FORMULIR DAN SOAL EVALUASI DILARANG OLEH SISTEM PROTEKSI KEMENKUM RI.";
+    display: block !important;
+    font-size: 14pt !important;
+    font-weight: bold !important;
+    color: #dc2626 !important;
+    text-align: center !important;
+    padding-top: 60mm !important;
+    font-family: sans-serif !important;
   }
 
   /* Hide elements not needed in print */

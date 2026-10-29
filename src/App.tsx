@@ -10,6 +10,7 @@ import { PinLoginModal } from './components/PinLoginModal';
 import { EvaluatorQueue } from './components/EvaluatorQueue';
 import { EvaluatorWorkspace } from './components/EvaluatorWorkspace';
 import { PrintReportModal } from './components/PrintReportModal';
+import { ChangePinModal } from './components/ChangePinModal';
 import { SecurityShield } from './components/SecurityShield';
 import { Respondent } from './types';
 import {
@@ -29,6 +30,7 @@ export default function App() {
 
   // PIN Modal state
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isChangePinModalOpen, setIsChangePinModalOpen] = useState(false);
 
   // Evaluator sub-view: queue list or active workspace
   const [selectedRespondent, setSelectedRespondent] = useState<Respondent | null>(null);
@@ -132,6 +134,7 @@ export default function App() {
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
         onSwitchPortal={handleSwitchPortal}
+        onOpenChangePinModal={() => setIsChangePinModalOpen(true)}
       />
 
       {/* Main Content Viewport */}
@@ -158,6 +161,7 @@ export default function App() {
                 onClearAllRespondents={handleClearAllRespondents}
                 onResetToMock={handleResetToMock}
                 onGoToPublicForm={() => setCurrentPortal('public')}
+                onOpenChangePinModal={() => setIsChangePinModalOpen(true)}
               />
             )}
           </div>
@@ -180,6 +184,12 @@ export default function App() {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onSuccess={handleLoginSuccess}
+      />
+
+      {/* Evaluator Change PIN Modal */}
+      <ChangePinModal
+        isOpen={isChangePinModalOpen}
+        onClose={() => setIsChangePinModalOpen(false)}
       />
 
       {/* Print & PDF Export Modal */}
