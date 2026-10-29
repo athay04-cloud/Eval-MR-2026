@@ -166,14 +166,11 @@ export default function App() {
 
       {/* Footer */}
       <footer className="no-print mt-auto border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-center">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-slate-700">Sistem Survei & Evaluasi Manajemen Risiko (SMR)</span>
             <span>·</span>
             <span>Kementerian Hukum RI</span>
-          </div>
-          <div className="text-[11px] text-slate-400">
-            Standar Pengendalian Intern Pemerintah (PP 60/2008 & ISO 31000)
           </div>
         </div>
       </footer>
