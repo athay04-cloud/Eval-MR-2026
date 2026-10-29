@@ -251,12 +251,18 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                             {score >= 9 ? 'Sangat Lengkap' : score >= 7 ? 'Cukup / Baik' : score >= 4 ? 'Kurang' : 'Sangat Kurang'}
                           </div>
                         </td>
-                        <td className="p-2 text-[10px] sm:text-[11px] text-slate-700 break-words">
-                          <div className="text-slate-600 line-clamp-3 leading-snug">
-                            {q.kisiKisi.split('\n')[0]}
+                        <td className="p-2 text-[10px] sm:text-[11px] text-slate-700 break-words leading-relaxed">
+                          <div className="text-slate-800">
+                            {score >= 9
+                              ? q.rubrik[4]
+                              : score >= 7
+                              ? q.rubrik[3]
+                              : score >= 4
+                              ? q.rubrik[2]
+                              : q.rubrik[1]}
                           </div>
                           {itemNote && (
-                            <div className="mt-1 text-slate-700 bg-amber-50/60 p-1.5 rounded border border-amber-200/60 leading-snug">
+                            <div className="mt-1.5 text-slate-700 bg-amber-50/80 p-1.5 rounded border border-amber-200/80 leading-snug text-[10px]">
                               <strong>Catatan Khusus:</strong> {itemNote}
                             </div>
                           )}

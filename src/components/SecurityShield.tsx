@@ -159,20 +159,8 @@ export const SecurityShield: React.FC<SecurityShieldProps> = ({ isPrintModalOpen
       }
     };
 
-    // 6. Window Blur & Visibility Change (Snipping Tool & App Switcher triggers this immediately)
-    const handleWindowBlur = () => {
-      if (!isPrintModalOpen) {
-        document.body.classList.add('screen-shield-active');
-        setIsScreenBlurred(true);
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden && !isPrintModalOpen) {
-        document.body.classList.add('screen-shield-active');
-        setIsScreenBlurred(true);
-      }
-    };
+    // 6. Window blur & visibility change listeners are disabled per user request:
+    // Leaving the browser or switching tabs/apps will not blur or lock the screen.
 
     window.addEventListener('contextmenu', handleContextMenu);
     window.addEventListener('dragstart', handleDragStart);
@@ -181,9 +169,6 @@ export const SecurityShield: React.FC<SecurityShieldProps> = ({ isPrintModalOpen
     window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('paste', handlePaste);
     window.addEventListener('copy', handleCopy);
-    window.addEventListener('blur', handleWindowBlur);
-    window.addEventListener('pagehide', handleWindowBlur);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('contextmenu', handleContextMenu);
@@ -193,9 +178,6 @@ export const SecurityShield: React.FC<SecurityShieldProps> = ({ isPrintModalOpen
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('paste', handlePaste);
       window.removeEventListener('copy', handleCopy);
-      window.removeEventListener('blur', handleWindowBlur);
-      window.removeEventListener('pagehide', handleWindowBlur);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.body.classList.remove('screen-shield-active');
     };
   }, [showAlert, triggerInstantObscure, isPrintModalOpen]);
@@ -239,7 +221,7 @@ export const SecurityShield: React.FC<SecurityShieldProps> = ({ isPrintModalOpen
               Layar Disamarkan Otomatis
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Jendela aplikasi tidak aktif atau alat tangkapan layar terdeteksi. Demi menjaga kerahasiaan instrumen evaluasi manajemen risiko, konten disamarkan dan disensor.
+              Alat tangkapan layar terdeteksi. Demi menjaga kerahasiaan instrumen evaluasi manajemen risiko, konten disamarkan dan disensor sementara.
             </p>
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-600 space-y-1">
               <div className="flex items-center justify-center gap-1.5 font-semibold text-slate-800">

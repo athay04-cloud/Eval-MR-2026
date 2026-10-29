@@ -601,23 +601,152 @@ const EvaluationItemCard: React.FC<EvaluationItemCardProps> = ({
             })}
           </div>
 
-          {/* Rubric Guide Interval Details */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 text-[11px]">
-            <div className={`p-2 rounded border ${selectedScore <= 3 ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-              <strong className="block mb-0.5">Skor 1 - 3 (Sangat Kurang):</strong>
-              <p className="line-clamp-2">{question.rubrik[1]}</p>
+          {/* Active Selected Rubric Explanation Spotlight */}
+          {(() => {
+            const activeRubricText =
+              selectedScore >= 9
+                ? question.rubrik[4]
+                : selectedScore >= 7
+                ? question.rubrik[3]
+                : selectedScore >= 4
+                ? question.rubrik[2]
+                : question.rubrik[1];
+
+            const activeStyle =
+              selectedScore >= 9
+                ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950'
+                : selectedScore >= 7
+                ? 'bg-blue-50/90 border-blue-300 text-blue-950'
+                : selectedScore >= 4
+                ? 'bg-amber-50/90 border-amber-300 text-amber-950'
+                : 'bg-rose-50/90 border-rose-300 text-rose-950';
+
+            const activeBadgeStyle =
+              selectedScore >= 9
+                ? 'bg-emerald-700 text-white'
+                : selectedScore >= 7
+                ? 'bg-blue-700 text-white'
+                : selectedScore >= 4
+                ? 'bg-amber-700 text-white'
+                : 'bg-rose-700 text-white';
+
+            return (
+              <div className={`p-3.5 rounded-lg border shadow-xs transition-all ${activeStyle}`}>
+                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${activeBadgeStyle}`}>
+                      Skor {selectedScore} / 10
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-wider">
+                      Uraian Rubrik Nilai Terpilih ({badge.label})
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-medium opacity-85">
+                    Kriteria Objektif Butir Soal {question.id}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-[13px] leading-relaxed whitespace-normal break-words font-sans font-medium">
+                  {activeRubricText}
+                </p>
+              </div>
+            );
+          })()}
+
+          {/* Rubric Guide Interval Details (Semua Kategori Teks Utuh Tanpa Terpotong) */}
+          <div className="space-y-2 pt-1">
+            <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+              <span>Panduan Seluruh Rentang Skor (Skala 1 - 10):</span>
+              <span className="text-[10px] text-slate-500 font-normal">Teks lengkap tidak terpotong</span>
             </div>
-            <div className={`p-2 rounded border ${selectedScore >= 4 && selectedScore <= 6 ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-              <strong className="block mb-0.5">Skor 4 - 6 (Kurang):</strong>
-              <p className="line-clamp-2">{question.rubrik[2]}</p>
-            </div>
-            <div className={`p-2 rounded border ${selectedScore >= 7 && selectedScore <= 8 ? 'bg-blue-50 border-blue-300 text-blue-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-              <strong className="block mb-0.5">Skor 7 - 8 (Cukup / Baik):</strong>
-              <p className="line-clamp-2">{question.rubrik[3]}</p>
-            </div>
-            <div className={`p-2 rounded border ${selectedScore >= 9 ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-              <strong className="block mb-0.5">Skor 9 - 10 (Sangat Lengkap):</strong>
-              <p className="line-clamp-2">{question.rubrik[4]}</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+              <div
+                className={`p-3 rounded-lg border transition-all ${
+                  selectedScore <= 3
+                    ? 'bg-rose-50/90 border-rose-400 ring-2 ring-rose-300 text-rose-950 shadow-xs'
+                    : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1 mb-1.5">
+                  <strong className="text-[11px] text-rose-900 block font-bold">
+                    Skor 1 - 3 (Sangat Kurang)
+                  </strong>
+                  {selectedScore <= 3 && (
+                    <span className="text-[9px] bg-rose-700 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                      Aktif
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] sm:text-xs leading-relaxed whitespace-normal break-words">
+                  {question.rubrik[1]}
+                </p>
+              </div>
+
+              <div
+                className={`p-3 rounded-lg border transition-all ${
+                  selectedScore >= 4 && selectedScore <= 6
+                    ? 'bg-amber-50/90 border-amber-400 ring-2 ring-amber-300 text-amber-950 shadow-xs'
+                    : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1 mb-1.5">
+                  <strong className="text-[11px] text-amber-900 block font-bold">
+                    Skor 4 - 6 (Kurang)
+                  </strong>
+                  {selectedScore >= 4 && selectedScore <= 6 && (
+                    <span className="text-[9px] bg-amber-700 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                      Aktif
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] sm:text-xs leading-relaxed whitespace-normal break-words">
+                  {question.rubrik[2]}
+                </p>
+              </div>
+
+              <div
+                className={`p-3 rounded-lg border transition-all ${
+                  selectedScore >= 7 && selectedScore <= 8
+                    ? 'bg-blue-50/90 border-blue-400 ring-2 ring-blue-300 text-blue-950 shadow-xs'
+                    : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1 mb-1.5">
+                  <strong className="text-[11px] text-blue-900 block font-bold">
+                    Skor 7 - 8 (Cukup / Baik)
+                  </strong>
+                  {selectedScore >= 7 && selectedScore <= 8 && (
+                    <span className="text-[9px] bg-blue-700 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                      Aktif
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] sm:text-xs leading-relaxed whitespace-normal break-words">
+                  {question.rubrik[3]}
+                </p>
+              </div>
+
+              <div
+                className={`p-3 rounded-lg border transition-all ${
+                  selectedScore >= 9
+                    ? 'bg-emerald-50/90 border-emerald-400 ring-2 ring-emerald-300 text-emerald-950 shadow-xs'
+                    : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1 mb-1.5">
+                  <strong className="text-[11px] text-emerald-900 block font-bold">
+                    Skor 9 - 10 (Sangat Lengkap)
+                  </strong>
+                  {selectedScore >= 9 && (
+                    <span className="text-[9px] bg-emerald-700 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                      Aktif
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] sm:text-xs leading-relaxed whitespace-normal break-words">
+                  {question.rubrik[4]}
+                </p>
+              </div>
             </div>
           </div>
         </div>
