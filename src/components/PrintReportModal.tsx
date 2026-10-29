@@ -69,8 +69,14 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                 <h3 className="text-[11px] sm:text-xs font-bold text-slate-800">
                   TIM EVALUASI DAN PENILAIAN MATURITAS MANAJEMEN RISIKO
                 </h3>
-                <p className="text-[9px] sm:text-[10px] text-slate-500">
-                  Gedung Sentra Mulia, Jl. H.R. Rasuna Said Kav. X-6, Kuningan, Jakarta Selatan
+                <p className="text-[9px] sm:text-[10px] text-slate-600 mt-0.5 leading-snug">
+                  Jalan H.R. Rasuna Said Kav.6-7, Kuningan, Jakarta Selatan
+                </p>
+                <p className="text-[9px] sm:text-[10px] text-slate-600 leading-snug">
+                  Telepon: 021-5252975 , Faksimile: 021-5252975
+                </p>
+                <p className="text-[9px] sm:text-[10px] text-slate-600 leading-snug">
+                  Laman: http://www.itjen.kemenkum.go.id, Pos-el: itjen@kemenkum.go.id
                 </p>
               </div>
             </div>
