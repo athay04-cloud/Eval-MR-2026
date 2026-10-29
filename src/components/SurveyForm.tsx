@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
-import { Send, CheckCircle2, Building2, User, FileText, AlertCircle } from 'lucide-react';
+import { Send, CheckCircle2, Building2, User, FileText, AlertCircle, Mail, Loader2, ExternalLink } from 'lucide-react';
 import { QUESTIONS_DATA } from '../data/questions';
 import { DAFTAR_SATKER } from '../data/satkerList';
 import { Respondent, StatusUpr } from '../types';
+import {
+  sendRespondentEmailNotification,
+  generateMailtoLink,
+  TARGET_EMAIL,
+} from '../utils/emailService';
 
 interface SurveyFormProps {
   onSubmitSuccess: (newRespondent: Respondent) => void;
@@ -32,6 +37,8 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmitSuccess }) => {
   const [isSubmittedModalOpen, setIsSubmittedModalOpen] = useState(false);
   const [submittedName, setSubmittedName] = useState('');
   const [submittedReceipt, setSubmittedReceipt] = useState('');
+  const [submittedRespondentData, setSubmittedRespondentData] = useState<Respondent | null>(null);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'failed'>('idle');
 
   const handleAnswerChange = (questionId: number, value: string) => {
     setAnswers((prev) => ({
@@ -90,7 +97,18 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmitSuccess }) => {
     onSubmitSuccess(newRespondent);
     setSubmittedName(nama.trim());
     setSubmittedReceipt(receiptId);
+    setSubmittedRespondentData(newRespondent);
     setIsSubmittedModalOpen(true);
+
+    // Auto-dispatch notification email to naufalenjia@gmail.com
+    setEmailStatus('sending');
+    sendRespondentEmailNotification(newRespondent, receiptId)
+      .then((res) => {
+        setEmailStatus(res.success ? 'success' : 'failed');
+      })
+      .catch(() => {
+        setEmailStatus('failed');
+      });
 
     // Reset Form
     setNama('');
@@ -271,9 +289,9 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmitSuccess }) => {
                   className="mt-0.5 text-slate-900 focus:ring-slate-900"
                 />
                 <div>
-                  <div className="text-sm font-semibold text-slate-900">IYA (Unit Pemilik Risiko)</div>
+                  <div className="text-sm font-semibold text-slate-900">IYA (Unit Pemilik Risiko sesuai SK)</div>
                   <div className="text-xs text-slate-500">
-                    Unit/Jabatan Saudara merupakan struktur resmi pemilik/pengelola risiko di satker.
+                    Unit/Jabatan Saudara merupakan struktur resmi pemilik/pengelola risiko di satker sesuai SK.
                   </div>
                 </div>
               </label>
@@ -305,7 +323,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmitSuccess }) => {
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 {statusUpr === 'IYA'
-                  ? 'Penjelasan Tingkatan / Peran UPR Saudara *'
+                  ? 'Penjelasan Tingkatan / Peran UPR Saudara (sesuai SK) *'
                   : 'Penjelasan Posisi / Keterlibatan Saudara dalam Struktur Risiko *'}
               </label>
               <textarea
@@ -315,7 +333,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmitSuccess }) => {
                 onChange={(e) => setKeteranganUpr(e.target.value)}
                 placeholder={
                   statusUpr === 'IYA'
-                    ? 'Sebutkan tingkatan atau peran UPR Anda (contoh: Koordinator UPR Satker, Anggota Pokja Pengendalian Aset, atau Sekretariat Penilaian Risiko)...'
+                    ? 'Sebutkan tingkatan atau peran UPR Anda sesuai SK (contoh: Koordinator UPR Satker, Anggota Pokja Pengendalian Aset, atau Sekretariat Penilaian Risiko)...'
                     : 'Sebutkan posisi atau alasan keterlibatan Anda dalam struktur risiko (contoh: Pelaksana operasional layanan, operator TI, atau staf pelaksana mitigasi lapangan)...'
                 }
                 className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900 text-slate-900"
@@ -407,11 +425,7 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmitSuccess }) => {
         </div>
 
         {/* Action Button */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <FileText className="w-4 h-4 text-slate-400" />
-            <span>Respon akan tersimpan dengan status &quot;Belum Dinilai&quot; untuk ditindaklanjuti evaluator.</span>
-          </div>
+        <div className="pt-2 flex justify-end">
           <button
             type="submit"
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer"
@@ -434,20 +448,63 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmitSuccess }) => {
               Terima kasih, <strong className="text-slate-900">{submittedName}</strong>. Data kuesioner Anda telah berhasil disimpan ke sistem evaluasi manajemen risiko dengan status <span className="font-semibold text-amber-800">Belum Dinilai</span>.
             </p>
 
-            <div className="my-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-700">
+            <div className="my-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-slate-700">
               <div className="text-[11px] text-slate-400 font-sans">Kode Tanda Terima:</div>
               <div className="text-sm font-bold text-slate-900">{submittedReceipt}</div>
             </div>
 
-            <p className="text-[11px] text-slate-500 mb-6">
-              Tim Evaluator akan memeriksa jawaban Anda melalui Portal Evaluator sesuai pedoman rubrik resmi.
+            {/* Auto Email Status Notification Card */}
+            <div className="my-3 p-3.5 rounded-xl border text-left text-xs space-y-2 bg-slate-50/80 border-slate-200">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Notifikasi Email Respon</span>
+                </span>
+                <span className="text-[10px] font-mono text-slate-500 font-semibold">{TARGET_EMAIL}</span>
+              </div>
+
+              {emailStatus === 'sending' && (
+                <div className="flex items-center gap-2 text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200 font-medium text-[11px]">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-amber-600" />
+                  <span>Mengirim notifikasi otomatis ke {TARGET_EMAIL}...</span>
+                </div>
+              )}
+
+              {emailStatus === 'success' && (
+                <div className="flex items-center gap-2 text-emerald-800 bg-emerald-50 p-2 rounded-lg border border-emerald-200 font-medium text-[11px]">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                  <span>Data respon survei otomatis terkirim ke {TARGET_EMAIL}</span>
+                </div>
+              )}
+
+              {emailStatus === 'failed' && submittedRespondentData && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-rose-800 bg-rose-50 p-2 rounded-lg border border-rose-200 font-medium text-[11px]">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
+                    <span>Layanan otomatis terhambat peramban. Kirim salinan via mailto:</span>
+                  </div>
+                  <a
+                    href={generateMailtoLink(submittedRespondentData, submittedReceipt)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Kirim Salinan ke {TARGET_EMAIL}</span>
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <p className="text-[11px] text-slate-500 mb-5">
+              Tim Evaluator akan memeriksa jawaban Anda melalui Portal Evaluator sesuai pedoman rubrik resmi Permenkum 15 Tahun 2025.
             </p>
 
             <button
               onClick={() => setIsSubmittedModalOpen(false)}
               className="w-full px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             >
-              Isi Respon Baru / Kembali ke Beranda
+              Isi Respon Baru / Selesai
             </button>
           </div>
         </div>

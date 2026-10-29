@@ -122,7 +122,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
               <div>
                 <span className="text-slate-500 block text-[10px] sm:text-xs">Status Unit Pemilik Risiko:</span>
                 <span className="font-bold text-slate-900">
-                  {respondent.statusUpr === 'IYA' ? 'Unit Pemilik Risiko (UPR)' : 'Bukan UPR'}
+                  {respondent.statusUpr === 'IYA' ? 'Unit Pemilik Risiko (UPR sesuai SK)' : 'Bukan UPR'}
                 </span>
               </div>
               <div>

@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Save, Printer, HelpCircle, Check, Sparkles, Award, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, Save, Printer, HelpCircle, Check, Sparkles, Award, CheckCircle2, XCircle, Mail, Loader2 } from 'lucide-react';
 import { Respondent } from '../types';
 import { QUESTIONS_DATA } from '../data/questions';
 import { calculateEvaluation, getMaturityCategory } from '../utils/scoring';
+import { sendEvaluationSummaryEmail, TARGET_EMAIL } from '../utils/emailService';
 
 interface EvaluatorWorkspaceProps {
   respondent: Respondent;
@@ -46,6 +47,30 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
   });
 
   const [saveSuccessNotification, setSaveSuccessNotification] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailNotification, setEmailNotification] = useState<string | null>(null);
+
+  const handleSendEmailReport = async () => {
+    setIsSendingEmail(true);
+    const updated: Respondent = {
+      ...respondent,
+      status: 'Sudah Dinilai',
+      evaluation: {
+        ...currentEvaluation,
+        tanggalEvaluasi: new Date().toLocaleString('id-ID', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }),
+      },
+    };
+
+    const res = await sendEvaluationSummaryEmail(updated);
+    setIsSendingEmail(false);
+    setEmailNotification(res.message);
+    setTimeout(() => {
+      setEmailNotification(null);
+    }, 4500);
+  };
 
   // Real-time calculation using 1-10 scale and 30 / 12 thresholds
   const currentEvaluation = useMemo(() => {
@@ -125,13 +150,34 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
           <span>Kembali ke Daftar Antrean</span>
         </button>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           {saveSuccessNotification && (
             <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg animate-in fade-in">
               <Check className="w-3.5 h-3.5 text-emerald-600" />
               <span>Nilai Berhasil Disimpan!</span>
             </span>
           )}
+
+          {emailNotification && (
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg animate-in fade-in">
+              <Mail className="w-3.5 h-3.5 text-blue-600" />
+              <span>{emailNotification}</span>
+            </span>
+          )}
+
+          <button
+            onClick={handleSendEmailReport}
+            disabled={isSendingEmail}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer shadow-xs"
+            title={`Kirim salinan laporan evaluasi ke ${TARGET_EMAIL}`}
+          >
+            {isSendingEmail ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+            ) : (
+              <Mail className="w-3.5 h-3.5 text-amber-600" />
+            )}
+            <span>Email ke Evaluator</span>
+          </button>
 
           <button
             onClick={() => onPrintReport({
@@ -142,7 +188,7 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer shadow-xs"
           >
             <Printer className="w-3.5 h-3.5 text-slate-600" />
-            <span>Cetak / PDF Lembar Kerja</span>
+            <span>Cetak / PDF</span>
           </button>
 
           <button
@@ -150,7 +196,7 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
             className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shadow-xs"
           >
             <Save className="w-3.5 h-3.5 text-amber-400" />
-            <span>Simpan Hasil Penilaian</span>
+            <span>Simpan Nilai</span>
           </button>
         </div>
       </div>
@@ -178,7 +224,7 @@ export const EvaluatorWorkspace: React.FC<EvaluatorWorkspaceProps> = ({
                   : 'bg-slate-100 text-slate-800 border border-slate-300'
               }`}
             >
-              Status: {respondent.statusUpr === 'IYA' ? 'Unit Pemilik Risiko (UPR)' : 'Bukan UPR'}
+              Status: {respondent.statusUpr === 'IYA' ? 'Unit Pemilik Risiko (UPR sesuai SK)' : 'Bukan UPR'}
             </span>
             <span
               className={`px-3 py-1 rounded-md text-xs font-semibold ${

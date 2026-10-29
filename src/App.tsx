@@ -17,6 +17,7 @@ import {
   INITIAL_MOCK_RESPONDENTS,
   STORAGE_KEY_RESPONDENTS,
   STORAGE_KEY_AUTH,
+  loadAndMigrateRespondents,
 } from './data/mockData';
 
 export default function App() {
@@ -38,23 +39,8 @@ export default function App() {
   // Print Report modal state
   const [printTargetRespondent, setPrintTargetRespondent] = useState<Respondent | null>(null);
 
-  // Respondents list loaded from LocalStorage
-  const [respondents, setRespondents] = useState<Respondent[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY_RESPONDENTS);
-      if (stored !== null) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          return parsed; // Can be empty array []
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    // Seed initial mock data only on first visit if never set
-    localStorage.setItem(STORAGE_KEY_RESPONDENTS, JSON.stringify(INITIAL_MOCK_RESPONDENTS));
-    return INITIAL_MOCK_RESPONDENTS;
-  });
+  // Respondents list loaded & migrated from LocalStorage (guarantees no stale Permenkumham text)
+  const [respondents, setRespondents] = useState<Respondent[]>(loadAndMigrateRespondents);
 
   // Sync respondents to localStorage whenever updated
   useEffect(() => {
@@ -118,8 +104,22 @@ export default function App() {
     setSelectedRespondent(null);
   };
 
-  // Reset to initial mock dataset
+  // Reset to initial mock dataset (and wipe old cached legacy keys)
   const handleResetToMock = () => {
+    const legacyKeys = [
+      'smr_kemenkum_respondents_v3',
+      'smr_kemenkum_respondents_v2',
+      'smr_kemenkum_respondents_v1',
+      'evaluasi_mr_respondents_v2',
+      'evaluasi_mr_respondents',
+    ];
+    legacyKeys.forEach((k) => {
+      try {
+        localStorage.removeItem(k);
+      } catch {
+        // ignore
+      }
+    });
     setRespondents(INITIAL_MOCK_RESPONDENTS);
     localStorage.setItem(STORAGE_KEY_RESPONDENTS, JSON.stringify(INITIAL_MOCK_RESPONDENTS));
     setSelectedRespondent(null);
