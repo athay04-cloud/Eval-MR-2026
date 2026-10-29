@@ -182,6 +182,7 @@ export const SecurityShield: React.FC<SecurityShieldProps> = ({ isPrintModalOpen
     window.addEventListener('paste', handlePaste);
     window.addEventListener('copy', handleCopy);
     window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('pagehide', handleWindowBlur);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
@@ -193,6 +194,7 @@ export const SecurityShield: React.FC<SecurityShieldProps> = ({ isPrintModalOpen
       window.removeEventListener('paste', handlePaste);
       window.removeEventListener('copy', handleCopy);
       window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('pagehide', handleWindowBlur);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.body.classList.remove('screen-shield-active');
     };
@@ -206,15 +208,15 @@ export const SecurityShield: React.FC<SecurityShieldProps> = ({ isPrintModalOpen
         pointer-events-none ensures users can click, scroll, and type without any obstruction.
       */}
       <div
-        className="fixed inset-0 pointer-events-none z-30 select-none overflow-hidden flex flex-wrap gap-x-12 gap-y-16 p-4 sm:p-8 items-center justify-around opacity-[0.09] dark:opacity-[0.14]"
+        className="fixed inset-0 pointer-events-none z-30 select-none overflow-hidden flex flex-wrap gap-x-8 gap-y-12 p-3 sm:p-6 items-center justify-around opacity-20 dark:opacity-25"
         aria-hidden="true"
       >
-        {Array.from({ length: 36 }).map((_, i) => (
+        {Array.from({ length: 48 }).map((_, i) => (
           <div
             key={i}
-            className="transform -rotate-25 text-[11px] sm:text-xs font-black text-slate-900 tracking-wider whitespace-nowrap uppercase font-mono border-y border-dashed border-slate-900/40 py-1"
+            className="transform -rotate-25 text-[10px] sm:text-xs font-black text-rose-950 tracking-wider whitespace-nowrap uppercase font-mono border-y-2 border-dashed border-rose-900/60 py-1 px-2 bg-rose-500/5"
           >
-            KEMENKUM RI · DOKUMEN TERTUTUP · DILARANG TANGKAP LAYAR · {sessionToken}
+            KEMENKUM RI · DOKUMEN TERTUTUP · DILARANG SCREENSHOT · {sessionToken}
           </div>
         ))}
       </div>
