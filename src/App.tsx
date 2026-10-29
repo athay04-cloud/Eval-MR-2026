@@ -10,6 +10,7 @@ import { PinLoginModal } from './components/PinLoginModal';
 import { EvaluatorQueue } from './components/EvaluatorQueue';
 import { EvaluatorWorkspace } from './components/EvaluatorWorkspace';
 import { PrintReportModal } from './components/PrintReportModal';
+import { SecurityShield } from './components/SecurityShield';
 import { Respondent } from './types';
 import {
   INITIAL_MOCK_RESPONDENTS,
@@ -190,6 +191,9 @@ export default function App() {
         onClose={() => setPrintTargetRespondent(null)}
         respondent={printTargetRespondent}
       />
+
+      {/* Anti-Copas and Anti-SS Security Guard */}
+      <SecurityShield isPrintModalOpen={Boolean(printTargetRespondent)} />
     </div>
   );
 }

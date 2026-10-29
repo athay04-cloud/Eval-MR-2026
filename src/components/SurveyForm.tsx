@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Send, CheckCircle2, Building2, User, FileText, AlertCircle } from 'lucide-react';
 import { QUESTIONS_DATA } from '../data/questions';
+import { DAFTAR_SATKER } from '../data/satkerList';
 import { Respondent, StatusUpr } from '../types';
 
 interface SurveyFormProps {
@@ -128,18 +129,18 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmitSuccess }) => {
           </p>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-slate-500 pt-2">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-500 pt-2 border-t border-slate-100">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-            <span>7 Butir Pertanyaan Esai Substantif</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            <span>7 Pertanyaan Esai Substantif</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-            <span>Penyimpanan Aman ke Database Lokal</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            <span>Penyimpanan Aman Database</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-            <span>Evaluasi Formal oleh Tim Penilai</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            <span>Evaluasi Formal Penilai</span>
           </div>
         </div>
       </div>
@@ -225,15 +226,25 @@ export const SurveyForm: React.FC<SurveyFormProps> = ({ onSubmitSuccess }) => {
                 Unit Kerja / Satuan Kerja (Satker) <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
-                <input
-                  type="text"
+                <select
                   required
                   value={satker}
                   onChange={(e) => setSatker(e.target.value)}
-                  placeholder="Contoh: Kantor Wilayah Kemenkum Jabar / Ditjen AHU"
-                  className="w-full pl-9 pr-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900 text-slate-900"
-                />
-                <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900 text-slate-900 appearance-none cursor-pointer"
+                >
+                  <option value="" disabled>-- Pilih Satuan Kerja --</option>
+                  {DAFTAR_SATKER.map((item) => (
+                    <option key={item.id} value={item.name}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+                <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                    <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>

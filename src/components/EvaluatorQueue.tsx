@@ -1,7 +1,24 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, Printer, UserPlus, RefreshCw, CheckCircle, Clock, Trash2, AlertTriangle, X } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  Printer,
+  UserPlus,
+  RefreshCw,
+  CheckCircle,
+  Clock,
+  Trash2,
+  AlertTriangle,
+  X,
+  FileSpreadsheet,
+  Download,
+  Building2,
+  Check
+} from 'lucide-react';
 import { Respondent, StatusPenilaian } from '../types';
 import { getMaturityCategory } from '../utils/scoring';
+import { exportRespondentsToExcel, exportRespondentsToCsv } from '../utils/excelExport';
+import { DAFTAR_SATKER } from '../data/satkerList';
 
 interface EvaluatorQueueProps {
   respondents: Respondent[];
@@ -24,17 +41,32 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'Semua' | StatusPenilaian>('Semua');
+  const [satkerFilter, setSatkerFilter] = useState<string>('Semua');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Confirmation Modal state
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
-    type: 'delete_single' | 'clear_all' | 'reset_mock';
+    type: 'delete_single' | 'clear_all';
     targetId?: string;
     targetName?: string;
   }>({
     isOpen: false,
     type: 'delete_single',
   });
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4000);
+  };
+
+  // Direct reset mock data with instant feedback
+  const handleResetMockDirect = () => {
+    onResetToMock();
+    showToast('Berhasil memuat ulang 4 data contoh responden ke dalam sistem.');
+  };
 
   // Filtered respondents
   const filtered = useMemo(() => {
@@ -46,10 +78,11 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
         r.jabatan.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchStatus = statusFilter === 'Semua' ? true : r.status === statusFilter;
+      const matchSatker = satkerFilter === 'Semua' ? true : r.satker === satkerFilter;
 
-      return matchSearch && matchStatus;
+      return matchSearch && matchStatus && matchSatker;
     });
-  }, [respondents, searchTerm, statusFilter]);
+  }, [respondents, searchTerm, statusFilter, satkerFilter]);
 
   // Statistics calculation
   const totalCount = respondents.length;
@@ -66,16 +99,50 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
   const handleExecuteConfirm = () => {
     if (confirmModal.type === 'delete_single' && confirmModal.targetId) {
       onDeleteRespondent(confirmModal.targetId);
+      showToast('Data responden berhasil dihapus.');
     } else if (confirmModal.type === 'clear_all') {
       onClearAllRespondents();
-    } else if (confirmModal.type === 'reset_mock') {
-      onResetToMock();
+      showToast('Seluruh data responden telah dikosongkan.');
     }
     setConfirmModal({ isOpen: false, type: 'delete_single' });
   };
 
+  const handleExportExcel = () => {
+    if (respondents.length === 0) {
+      showToast('Tidak ada data untuk diekspor ke Excel.');
+      return;
+    }
+    exportRespondentsToExcel(respondents);
+    showToast('File Excel (.xls) berhasil diunduh.');
+  };
+
+  const handleExportCsv = () => {
+    if (respondents.length === 0) {
+      showToast('Tidak ada data untuk diekspor ke CSV.');
+      return;
+    }
+    exportRespondentsToCsv(respondents);
+    showToast('File CSV Excel berhasil diunduh.');
+  };
+
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6">
+      {/* Toast Notification Banner */}
+      {toastMessage && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-semibold flex items-center justify-between shadow-sm animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="text-emerald-700 hover:text-emerald-900 p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Page Title & Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
         <div>
@@ -91,12 +158,54 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Export to Excel Buttons */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleExportExcel}
+              disabled={totalCount === 0}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg transition-colors shadow-xs ${
+                totalCount > 0
+                  ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
+                  : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+              }`}
+              title="Unduh seluruh rekapitulasi data responden & nilai dalam format Excel (.xls)"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Ekspor Excel (.xls)</span>
+            </button>
+
+            <button
+              onClick={handleExportCsv}
+              disabled={totalCount === 0}
+              className={`flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                totalCount > 0
+                  ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300 cursor-pointer'
+                  : 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
+              }`}
+              title="Unduh rekapitulasi CSV (Excel UTF-8 BOM)"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500" />
+              <span>CSV</span>
+            </button>
+          </div>
+
+          <div className="h-5 w-px bg-slate-200 mx-1 hidden sm:block"></div>
+
           <button
             onClick={onGoToPublicForm}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
           >
             <UserPlus className="w-3.5 h-3.5 text-slate-500" />
-            <span>Isi Form Publik</span>
+            <span>Form Publik</span>
+          </button>
+
+          <button
+            onClick={handleResetMockDirect}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-colors cursor-pointer"
+            title="Muat ulang 4 data contoh default secara instan"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-amber-700" />
+            <span>Muat Data Contoh</span>
           </button>
 
           {totalCount > 0 && (
@@ -111,23 +220,9 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
               title="Hapus semua berkas responden dari database"
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-              <span>Kosongkan Semua Data</span>
+              <span>Kosongkan Data</span>
             </button>
           )}
-
-          <button
-            onClick={() =>
-              setConfirmModal({
-                isOpen: true,
-                type: 'reset_mock',
-              })
-            }
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
-            title="Muat ulang 4 data contoh default"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-            <span>Muat Data Contoh</span>
-          </button>
         </div>
       </div>
 
@@ -169,21 +264,45 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Search Input */}
-        <div className="relative w-full sm:w-80">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Cari nama, NIP, atau satker..."
-            className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900 focus:bg-white text-slate-900"
-          />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+          {/* Search Input */}
+          <div className="relative flex-1 sm:max-w-xs">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Cari nama atau NIP..."
+              className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900 focus:bg-white text-slate-900"
+            />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          </div>
+
+          {/* Satker Filter Dropdown */}
+          <div className="relative flex-1 sm:max-w-sm">
+            <select
+              value={satkerFilter}
+              onChange={(e) => setSatkerFilter(e.target.value)}
+              className="w-full pl-8 pr-7 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-slate-900 text-slate-800 appearance-none cursor-pointer"
+            >
+              <option value="Semua">Semua Satuan Kerja (7 Satker Resmi)</option>
+              {DAFTAR_SATKER.map((item) => (
+                <option key={item.id} value={item.name}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+            <Building2 className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         {/* Status Tabs Segmented Control */}
-        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-full sm:w-auto">
+        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-full sm:w-auto self-start lg:self-auto">
           {(['Semua', 'Belum Dinilai', 'Sudah Dinilai'] as const).map((tab) => (
             <button
               key={tab}
@@ -227,7 +346,7 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
                     <p className="text-[11px] text-slate-400 mt-1 max-w-md mx-auto">
                       {totalCount === 0
                         ? 'Database responden saat ini kosong. Pegawai dapat mengisi survei melalui Formulir Publik atau Anda dapat memuat data simulasi contoh.'
-                        : 'Coba sesuaikan kata kunci pencarian atau ubah tab status.'}
+                        : 'Coba sesuaikan kata kunci pencarian atau ubah filter satuan kerja.'}
                     </p>
                     {totalCount === 0 && (
                       <div className="mt-4 flex items-center justify-center gap-3">
@@ -238,13 +357,8 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
                           Buka Formulir Publik
                         </button>
                         <button
-                          onClick={() =>
-                            setConfirmModal({
-                              isOpen: true,
-                              type: 'reset_mock',
-                            })
-                          }
-                          className="px-3.5 py-2 text-xs font-semibold bg-slate-100 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
+                          onClick={handleResetMockDirect}
+                          className="px-3.5 py-2 text-xs font-semibold bg-amber-50 border border-amber-300 text-amber-900 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer"
                         >
                           Muat Data Contoh Awal
                         </button>
@@ -375,25 +489,17 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
         </div>
       </div>
 
-      {/* IN-APP CONFIRMATION MODAL (Replaces blocked window.confirm) */}
+      {/* IN-APP CONFIRMATION MODAL */}
       {confirmModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-2xl p-6">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2.5">
-                <div
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                    confirmModal.type === 'delete_single' || confirmModal.type === 'clear_all'
-                      ? 'bg-rose-50 text-rose-600 border border-rose-200'
-                      : 'bg-amber-50 text-amber-700 border border-amber-200'
-                  }`}
-                >
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-rose-50 text-rose-600 border border-rose-200">
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900">
-                  {confirmModal.type === 'delete_single' && 'Konfirmasi Hapus Responden'}
-                  {confirmModal.type === 'clear_all' && 'Konfirmasi Kosongkan Seluruh Data'}
-                  {confirmModal.type === 'reset_mock' && 'Konfirmasi Muat Data Contoh'}
+                  {confirmModal.type === 'delete_single' ? 'Konfirmasi Hapus Responden' : 'Konfirmasi Kosongkan Seluruh Data'}
                 </h3>
               </div>
               <button
@@ -405,20 +511,14 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
             </div>
 
             <div className="text-xs text-slate-600 leading-relaxed space-y-2 mb-6">
-              {confirmModal.type === 'delete_single' && (
+              {confirmModal.type === 'delete_single' ? (
                 <p>
                   Apakah Anda yakin ingin menghapus data responden{' '}
                   <strong className="text-slate-900">{confirmModal.targetName}</strong>? Data yang dihapus tidak dapat dipulihkan kembali.
                 </p>
-              )}
-              {confirmModal.type === 'clear_all' && (
+              ) : (
                 <p>
                   Apakah Anda yakin ingin <strong className="text-rose-700">menghapus seluruh berkas responden</strong> dari database? Seluruh data survei dan riwayat nilai akan dikosongkan.
-                </p>
-              )}
-              {confirmModal.type === 'reset_mock' && (
-                <p>
-                  Apakah Anda ingin memuat kembali 4 data simulasi awal untuk pengujian alur penilaian?
                 </p>
               )}
             </div>
@@ -434,15 +534,9 @@ export const EvaluatorQueue: React.FC<EvaluatorQueueProps> = ({
               <button
                 type="button"
                 onClick={handleExecuteConfirm}
-                className={`px-4 py-2 text-xs font-semibold text-white rounded-lg transition-colors cursor-pointer shadow-xs ${
-                  confirmModal.type === 'delete_single' || confirmModal.type === 'clear_all'
-                    ? 'bg-rose-600 hover:bg-rose-700'
-                    : 'bg-slate-900 hover:bg-slate-800'
-                }`}
+                className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors cursor-pointer shadow-xs"
               >
-                {confirmModal.type === 'delete_single' && 'Ya, Hapus Data'}
-                {confirmModal.type === 'clear_all' && 'Ya, Kosongkan Semua'}
-                {confirmModal.type === 'reset_mock' && 'Ya, Muat Data Contoh'}
+                {confirmModal.type === 'delete_single' ? 'Ya, Hapus Data' : 'Ya, Kosongkan Semua'}
               </button>
             </div>
           </div>
